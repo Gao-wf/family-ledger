@@ -1,0 +1,2328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>家庭账本</title>
+<style>
+:root{
+  --bg:#f4f6fa; --card:#fff; --line:#e8ecf2; --txt:#1a2230; --sub:#7a8699;
+  --out:#d9403a; --in:#12a05c; --brand:#2f6bff; --brand-soft:#eaf1ff;
+  --warn:#d9821a; --r:14px; --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--txt);
+  font:15px/1.5 -apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  padding-bottom:calc(62px + var(--safe-b));
+}
+button{font-family:inherit;font-size:15px;border:0;background:none;color:inherit;cursor:pointer}
+input,select{font-family:inherit;font-size:15px;color:inherit}
+
+.wrap{max-width:560px;margin:0 auto;padding:0 14px}
+
+/* 顶栏 */
+header{
+  position:sticky;top:0;z-index:30;
+  background:rgba(255,255,255,.88);backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)
+}
+.hbar{max-width:560px;margin:0 auto;padding:11px 14px;display:flex;align-items:center;gap:10px}
+.hbar h1{margin:0;font-size:17px;font-weight:650;letter-spacing:.2px}
+.hbar .sub{color:var(--sub);font-size:12px;margin-left:auto}
+.iconbtn{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:17px}
+.iconbtn:active{background:var(--line)}
+
+/* 底部导航 */
+nav{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:rgba(255,255,255,.94);backdrop-filter:saturate(180%) blur(14px);
+  border-top:1px solid var(--line);
+  padding-bottom:var(--safe-b);
+}
+nav .inner{max-width:560px;margin:0 auto;display:flex}
+nav button{
+  flex:1;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:3px;
+  color:var(--sub);font-size:10.5px
+}
+nav button .ic{font-size:20px;line-height:1}
+nav button.on{color:var(--brand);font-weight:600}
+
+/* 卡片 */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:15px;margin:12px 0}
+.card.tight{padding:11px 13px}
+.card h3{margin:0 0 11px;font-size:14.5px;font-weight:650;display:flex;align-items:center;gap:6px}
+.card h3 .r{margin-left:auto;font-size:12.5px;color:var(--sub);font-weight:400}
+.muted{color:var(--sub);font-size:12.5px}
+.empty{text-align:center;color:var(--sub);padding:26px 10px;font-size:13.5px;line-height:1.9}
+.empty .big{font-size:34px;display:block;margin-bottom:6px}
+
+/* 汇总 */
+.hero{background:linear-gradient(150deg,#2f6bff,#1d47c9);color:#fff;border:0}
+.hero .k{font-size:12px;opacity:.85}
+.hero .v{font-size:30px;font-weight:700;letter-spacing:-.5px;margin:2px 0 0}
+.hero .grid{display:flex;gap:18px;margin-top:14px;padding-top:13px;border-top:1px solid rgba(255,255,255,.2)}
+.hero .grid div{flex:1}
+.hero .grid .v{font-size:17px;font-weight:650}
+.hero-refund{
+  margin-top:12px;padding-top:11px;border-top:1px solid rgba(255,255,255,.2);
+  font-size:12.5px;opacity:.95
+}
+.hero-refund b{font-size:14px;font-weight:700}
+
+/* 条目 */
+.row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid #f1f4f8}
+.row:last-child{border-bottom:0}
+.row .ic{width:36px;height:36px;flex:0 0 36px;border-radius:11px;display:grid;place-items:center;font-size:17px}
+.row .mid{flex:1;min-width:0}
+.row .t1{font-size:14.5px;font-weight:550;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t2{font-size:11.5px;color:var(--sub);margin-top:2px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.row .amt{font-size:15.5px;font-weight:650;white-space:nowrap;font-variant-numeric:tabular-nums}
+.row .amt.out{color:var(--out)}
+.row .amt.in{color:var(--in)}
+
+.tag{font-size:10.5px;padding:1px 6px;border-radius:6px;background:#f0f3f8;color:#5b6676;white-space:nowrap}
+.tag.g{background:#e7f7ee;color:#0f8a4e}
+.tag.b{background:var(--brand-soft);color:var(--brand)}
+.tag.w{background:#fdf1e0;color:var(--warn)}
+
+/* 进度条 */
+.bar{height:7px;border-radius:4px;background:#eef1f6;overflow:hidden;margin-top:6px}
+.bar>i{display:block;height:100%;border-radius:4px;background:var(--brand)}
+.bar>i.over{background:var(--out)}
+.bar>i.ok{background:var(--in)}
+
+/* 按钮 */
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  padding:14px;border-radius:13px;background:var(--brand);color:#fff;font-size:15.5px;font-weight:600
+}
+.btn:active{opacity:.75}
+.btn.ghost{background:var(--brand-soft);color:var(--brand)}
+.btn.line{background:#fff;border:1px solid var(--line);color:var(--txt)}
+.btn.danger{background:#fdecec;color:var(--out)}
+.btn[disabled]{opacity:.45}
+.btn.sm{padding:9px 14px;font-size:13.5px;width:auto;border-radius:10px}
+.btnrow{display:flex;gap:9px;margin-top:11px}
+
+/* 表单 */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:12.5px;color:var(--sub);margin-bottom:6px}
+.field input,.field select{
+  width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:11px;
+  background:#fbfcfe;font-size:15.5px;outline:none
+}
+.field input:focus,.field select:focus{border-color:var(--brand);background:#fff}
+.two{display:flex;gap:10px}
+.two>*{flex:1;min-width:0}
+.seg{display:flex;background:#f0f3f8;border-radius:11px;padding:3px;gap:3px}
+.seg button{flex:1;padding:9px;border-radius:9px;font-size:14px;color:var(--sub);font-weight:550}
+.seg button.on{background:#fff;color:var(--txt);box-shadow:0 1px 3px rgba(20,40,80,.09)}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:7px 12px;border-radius:999px;background:#f0f3f8;font-size:13px;color:#4a5567}
+.chip.on{background:var(--brand);color:#fff;font-weight:600}
+
+/* 日历 */
+.cal .dow{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:5px}
+.cal .dow span{text-align:center;font-size:11px;color:var(--sub)}
+.cal .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+.cal .cell{
+  aspect-ratio:1;border-radius:9px;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;font-size:12.5px;background:#fbfcfe;color:#55606f;position:relative
+}
+.cal .cell.out{background:#fdeeee;color:#8c3a35;font-weight:600}
+.cal .cell.in{background:#e7f7ee;color:#0f7a48;font-weight:600}
+.cal .cell.today{box-shadow:inset 0 0 0 1.5px var(--brand)}
+.cal .cell.sel{box-shadow:inset 0 0 0 2px var(--brand);font-weight:700}
+.cal .cell .sm{font-size:9px;opacity:.75;line-height:1}
+.cal .cell .rp{position:absolute;top:1px;right:2px;font-size:8px;line-height:1}
+.cal .cell .rf{position:absolute;top:1px;left:2px;font-size:8px;line-height:1;opacity:.85}
+
+/* 弹层 */
+.mask{position:fixed;inset:0;background:rgba(12,20,35,.42);z-index:60;display:none}
+.mask.on{display:block}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:61;background:#fff;
+  border-radius:20px 20px 0 0;padding:8px 16px calc(20px + var(--safe-b));
+  max-width:560px;margin:0 auto;transform:translateY(100%);transition:transform .26s cubic-bezier(.3,.8,.4,1);
+  max-height:86vh;overflow:auto
+}
+.sheet.on{transform:translateY(0)}
+.grab{width:36px;height:4px;border-radius:2px;background:#dfe4ec;margin:6px auto 12px}
+.sheet h3{margin:0 0 14px;font-size:16px;font-weight:650}
+.sheet .x{position:absolute;right:14px;top:16px;font-size:20px;color:var(--sub)}
+
+/* 提示 */
+.toast{
+  position:fixed;left:50%;bottom:calc(84px + var(--safe-b));transform:translateX(-50%);
+  background:rgba(24,32,45,.93);color:#fff;padding:11px 18px;border-radius:12px;font-size:13.5px;
+  z-index:90;opacity:0;pointer-events:none;transition:.22s;max-width:80vw;text-align:center
+}
+.toast.on{opacity:1}
+
+.note{background:#f7f9fc;border:1px dashed #d8dfe9;border-radius:12px;padding:12px;font-size:12.5px;color:#5b6676;line-height:1.85}
+.note b{color:var(--txt)}
+ol.steps{margin:8px 0 0;padding-left:20px;line-height:1.95;font-size:12.5px;color:#5b6676}
+ol.steps li{margin-bottom:5px}
+.hide{display:none!important}
+.dl{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #f1f4f8;font-size:13.5px}
+.dl:last-child{border-bottom:0}
+.dl .v{font-weight:650;font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hbar">
+    <h1 id="ttl">账本</h1>
+    <span class="sub" id="hsub"></span>
+    <button class="iconbtn" onclick="App.go('me')" title="设置">⚙</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+<!-- ═══════════ 首页 ═══════════ -->
+<section id="v-home">
+  <div class="card hero">
+    <div class="k" id="hk">本月支出</div>
+    <div class="v" id="hv">¥0.00</div>
+    <div class="grid">
+      <div><div class="k">本月收入</div><div class="v" id="hi">¥0.00</div></div>
+      <div><div class="k">本月结余</div><div class="v" id="hn">¥0.00</div></div>
+      <div><div class="k">本月笔数</div><div class="v" id="hc">0</div></div>
+    </div>
+    <div id="hrefund" class="hero-refund" style="display:none"></div>
+  </div>
+
+  <div class="card cal">
+    <h3>📅 <span id="calTitle">日历</span><span class="r" onclick="App.setMonth(0)">回到本月 ›</span></h3>
+    <div style="display:flex;gap:8px;margin-bottom:11px">
+      <button class="btn sm line" style="flex:1" onclick="App.setMonth(-1)">‹ 上月</button>
+      <button class="btn sm line" style="flex:1" onclick="App.setMonth(1)">下月 ›</button>
+    </div>
+    <div class="dow"><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span></div>
+    <div class="grid" id="cal"></div>
+    <div id="monthNav"></div>
+  </div>
+
+  <div class="card" id="dayCard">
+    <h3>🧾 <span id="dayTitle">当日明细</span><span class="r" id="daySum"></span></h3>
+    <div id="dayList"></div>
+  </div>
+
+  <div class="card">
+    <h3>🏷️ 本月分类支出<span class="r" id="catSum"></span></h3>
+    <div id="catBars"></div>
+  </div>
+</section>
+
+<!-- ═══════════ 导入 ═══════════ -->
+<section id="v-import" class="hide">
+  <div class="card">
+    <h3>📥 导入账单文件</h3>
+    <div class="note" id="howto"></div>
+    <div class="btnrow">
+      <button class="btn sm" onclick="App.pick()">选择账单文件</button>
+      <button class="btn sm ghost" onclick="App.pick()">Excel / CSV</button>
+    </div>
+    <input type="file" id="fileIn" accept=".csv,.txt,.xlsx,.xlsm,.xls" multiple class="hide" onchange="App.onFiles(this.files)">
+    <div id="impRes"></div>
+    <div class="note" style="margin-top:12px;background:#f2fbf6;border-color:#bfe8d1">
+      <b>放心重复导入：</b>同一个账单文件只会入库一次，再选一次会被自动跳过并提示，
+      不会把金额算重。想重新导入某个文件，先到「导入历史」点「撤销」。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📷 账单截图识别</h3>
+    <div class="muted" style="line-height:1.85;margin-bottom:11px">
+      美团月付、抖音月付、云闪付<b>多数不支持导出文件</b>，只能在 App 里看页面。这类金额少，<b>直接手动记一笔最快</b>；截图也行——发给我，我读完给你一份可直接导入的 CSV。
+    </div>
+    <ol class="steps">
+      <li>把账单列表<b>整页截图</b>，金额和日期要能看清</li>
+      <li>发给助手，说明「这是我的月付账单」</li>
+      <li>我生成 CSV → 你在上面的「选择账单 CSV」里选它导入</li>
+    </ol>
+    <div class="note" style="margin-top:11px;background:#fdf9f2;border-color:#ecd9b8">
+      ⚠️ 截图读出的数字无法保证 100% 准确，导入后请核对一遍。
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📄 导入历史</h3>
+    <div id="hist"><div class="empty">还没有导入记录</div></div>
+  </div>
+
+  <div class="card">
+    <h3>✍️ 手动记一笔</h3>
+    <div class="field">
+      <label>类型</label>
+      <div class="seg" id="mDir">
+        <button class="on" data-v="out" onclick="App.mDir('out')">支出</button>
+        <button data-v="in" onclick="App.mDir('in')">收入</button>
+        <button data-v="refund" onclick="App.mDir('refund')">退款</button>
+      </div>
+      <div class="muted" id="mDirHint" style="margin-top:6px">退款会从支出里扣掉，不计入收入</div>
+    </div>
+    <div class="two">
+      <div class="field"><label>金额（元）</label><input type="number" id="mAmt" inputmode="decimal" placeholder="0.00" step="0.01"></div>
+      <div class="field"><label>日期</label><input type="date" id="mDate"></div>
+    </div>
+    <div class="field"><label>对方 / 商家</label><input id="mWho" placeholder="如：美团、超市、奶粉"></div>
+    <div class="field">
+      <label>分类（不选则自动判断）</label>
+      <div class="chips" id="mChips"></div>
+    </div>
+    <div class="field"><label>备注（选填）</label><input id="mNote" placeholder="选填"></div>
+    <div class="field">
+      <label>支付渠道（选常用渠道即可，用于跨渠道去重）</label>
+      <select id="mCh"></select>
+    </div>
+    <button class="btn" onclick="App.addManual()">保存这一笔</button>
+  </div>
+</section>
+
+<!-- ═══════════ 统计 ═══════════ -->
+<section id="v-stat" class="hide">
+  <div class="card tight" style="display:flex;gap:8px;padding:9px">
+    <button class="btn sm ghost" style="flex:1" onclick="App.setRange('month')">本月</button>
+    <button class="btn sm line" style="flex:1" onclick="App.setRange('last')">上月</button>
+    <button class="btn sm line" style="flex:1" onclick="App.setRange('year')">本年</button>
+  </div>
+  <div class="card hero">
+    <div class="k" id="sk">区间支出</div>
+    <div class="v" id="sv">¥0.00</div>
+    <div class="grid">
+      <div><div class="k">收入</div><div class="v" id="si">¥0.00</div></div>
+      <div><div class="k">结余</div><div class="v" id="sn">¥0.00</div></div>
+      <div><div class="k">日均支出</div><div class="v" id="sd">¥0</div></div>
+    </div>
+    <div id="sref" style="margin-top:11px;padding-top:10px;border-top:1px solid rgba(255,255,255,.2);font-size:12px;opacity:.95;display:none"></div>
+  </div>
+  <div class="card"><h3>🏷️ 分类占比<span class="r" id="srSum"></span></h3><div id="stCats"></div></div>
+  <div class="card"><h3>💳 渠道分布</h3><div id="stCh"></div></div>
+  <div class="card">
+    <h3>🎯 分类预算<span class="r" onclick="App.go('me')">设置 ›</span></h3>
+    <div id="stBud"></div>
+  </div>
+</section>
+
+<!-- ═══════════ 我的 ═══════════ -->
+<section id="v-me" class="hide">
+  <div class="card">
+    <h3>🎯 月度预算<span class="r">留空=不限制</span></h3>
+    <div id="budList"></div>
+    <button class="btn sm line" style="width:100%;margin-top:11px" onclick="App.saveBudgets()">保存预算</button>
+  </div>
+  <div class="card">
+    <h3>💾 数据备份</h3>
+    <div class="muted" style="line-height:1.85;margin-bottom:11px">
+      数据保存在这台设备的浏览器里。清除浏览器数据、换手机都会丢，建议每月导出一次备份存到微信收藏或网盘。
+    </div>
+    <button class="btn" onclick="App.exportData()">导出备份文件</button>
+    <div class="btnrow">
+      <button class="btn sm line" style="flex:1" onclick="App.importData()">导入备份</button>
+      <button class="btn sm line" style="flex:1" onclick="App.exportCSV()">导出 CSV</button>
+    </div>
+    <input type="file" id="bkIn" accept=".json,.csv,.txt" class="hide" onchange="App.onBackup(this.files[0])">
+  </div>
+  <div class="card">
+    <h3>🧹 数据维护</h3>
+    <div class="dl"><span>已记账笔数</span><span class="v" id="mc">0</span></div>
+    <div class="dl"><span>自动分类覆盖</span><span class="v" id="mk">—</span></div>
+    <div class="dl"><span>跨渠道疑似重复</span><span class="v" id="md">0</span></div>
+    <div class="dl"><span>退款记录</span><span class="v" id="mrf">0 笔</span></div>
+    <div class="dl"><span>已导入文件</span><span class="v" id="mf">0</span></div>
+    <div class="note" style="margin-top:11px;background:#f7f9fc;border-color:#d8dfe9">
+      <b>退款怎么算：</b>退款不计入收入（那不是挣到的钱），而是从当月支出里扣除——
+      9 月买手机 5999、10 月退回，9 月支出会相应减掉，分类占比也同步下调。
+      账本里退款显示为 <b>↩ 退款</b> 并标「已从支出扣除」。<br>
+      <b>不会重复导入：</b>同一个账单文件只会被导入一次，再选一次会被自动跳过并提示。
+    </div>
+    <div class="btnrow">
+      <button class="btn sm line" style="flex:1" onclick="App.dupSheet()">查看存疑</button>
+      <button class="btn sm danger" style="flex:1" onclick="App.wipe()">清空全部</button>
+    </div>
+  </div>
+  <div class="card">
+    <h3>ℹ️ 关于</h3>
+    <div class="muted" style="line-height:1.9">
+      单文件离线账本 · 无需注册 · 数据不离开本机<br>
+      添加到手机桌面：Safari 分享 → 添加到主屏幕<br>
+      分类可在导入后点单条记录手动修正
+    </div>
+  </div>
+</section>
+
+</div>
+
+<nav><div class="inner">
+  <button data-v="home" class="on" onclick="App.go('home')"><span class="ic">🏠</span>明细</button>
+  <button data-v="import" onclick="App.go('import')"><span class="ic">📥</span>导入</button>
+  <button data-v="stat" onclick="App.go('stat')"><span class="ic">📊</span>统计</button>
+  <button data-v="me" onclick="App.go('me')"><span class="ic">👤</span>我的</button>
+</div></nav>
+
+<div class="mask" id="mask" onclick="App.close()"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <button class="x" onclick="App.close()">✕</button>
+  <div id="sheetBody"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ══════════════ 分类引擎 ══════════════ */
+const CATS = {
+  "餐饮":"🍚","交通":"🚗","购物":"🛍️","居家":"🏠","育儿":"🍼","医疗":"💊",
+  "娱乐":"🎮","通讯":"📱","服饰":"👕","日用":"🧴","人情":"🎁","还款":"💳","退款":"↩️","其他":"📦"
+};
+/* 关键词 → 分类。顺序敏感：先匹配到的优先，长词在前 */
+const RULES = [
+  ["乳糖酶","育儿"],["奶粉","育儿"],["纸尿裤","育儿"],["尿不湿","育儿"],["尿裤","育儿"],
+  ["母婴","育儿"],["童装","育儿"],["玩具","育儿"],["积木","育儿"],["绘本","育儿"],
+  ["早教","育儿"],["婴儿","育儿"],["宝宝","育儿"],["辅食","育儿"],["米粉","育儿"],
+  ["海王星辰","医疗"],["一心堂","医疗"],["益丰大药房","医疗"],["老百姓大药房","医疗"],
+  ["叮当快药","医疗"],["京东健康","医疗"],["叮咚快药","医疗"],["御药堂","医疗"],["同仁堂","医疗"],
+  ["推拿","医疗"],["小儿","医疗"],["疫苗","医疗"],["医院","医疗"],["药房","医疗"],
+  ["苏宁易购","购物"],["国美","购物"],["小米之家","购物"],["华为商城","购物"],["Apple Store","购物"],
+  ["屈臣氏","日用"],["名创优品","日用"],["永旺","购物"],["华润万家","购物"],["家乐福","购物"],
+  ["孩子王","育儿"],["爱婴室","育儿"],["乐友","育儿"],["丽家宝贝","育儿"],["十月结晶","育儿"],
+  ["星巴克","餐饮"],["瑞幸","餐饮"],["蜜雪冰城","餐饮"],["喜茶","餐饮"],["古茗","餐饮"],["茶百道","餐饮"],
+  ["麦香","餐饮"],["稻香","餐饮"],["妈妈菜","餐饮"],["现炒","餐饮"],["小厨","餐饮"],["饭庄","餐饮"],
+  ["咖啡","餐饮"],["卡法","餐饮"],["瑞幸咖啡","餐饮"],["幸运咖","餐饮"],["库迪","餐饮"],
+  ["商贸","购物"],["和清顺泰","购物"],
+  /* 彩票属娱乐/爱好，不该混进「其他」 */
+  ["彩票","娱乐"],["体彩","娱乐"],["福彩","娱乐"],["中国福利彩票","娱乐"],["中国体育彩票","娱乐"],
+  ["7-eleven","日用"],["7-11","日用"],["便利店","日用"],["711","日用"],["全家","日用"],
+  ["罗森","日用"],["美宜佳","日用"],["便利蜂","日用"],
+  /* 抖音系：抖音商城、抖音生活团购常见商家 */
+  ["抖音商城","购物"],["抖音生活","娱乐"],["抖音小店","购物"],
+  /* ⚠️ 「月付」「白条」「花呗」是支付方式，不是商家，不能进消费分类词典
+     它们的消费金额要按真实商户归类，还款行由 settle 规则单独标记 */
+  ["京东","购物"],["jd.com","购物"],["京东超市","日用"],
+  /* 云闪付本质是银行卡支付，多为线下商超餐饮 */
+  ["云闪付","日用"],["银联","日用"],["中国银联","日用"],
+  ["药店","医疗"],["大药房","医疗"],["诊所","医疗"],["挂号","医疗"],["门诊","医疗"],
+  ["体检","医疗"],["口腔","医疗"],["医疗","医疗"],["保健","医疗"],
+  ["买药","医疗"],["医药","医疗"],["美团买药","医疗"],
+  ["酒店","居家"],["住宿","居家"],["民宿","居家"],["客栈","居家"],["公寓","居家"],
+  ["优选","日用"],["美团优选","日用"],
+  ["外卖","餐饮"],["饿了么","餐饮"],["餐饮","餐饮"],["餐厅","餐饮"],
+  /* ⚠️ 平台名不能当品类词：美团上什么店都有，必须按具体商户/商品判断
+     美团买药→医疗、美团单车→交通、美团酒店→居家，都在下面各自分类里 */
+  ["饭店","餐饮"],["小吃","餐饮"],["快餐","餐饮"],["火锅","餐饮"],["烧烤","餐饮"],
+  ["面馆","餐饮"],["food","餐饮"],["食堂","餐饮"],["咖啡","餐饮"],["奶茶","餐饮"],
+  ["烘焙","餐饮"],["蛋糕","餐饮"],["面包","餐饮"],["水果","餐饮"],["零食","餐饮"],
+  ["餐","餐饮"],["饭","餐饮"],["食品","餐饮"],["酒","餐饮"],["烟","餐饮"],
+  ["打车","交通"],["滴滴","交通"],["出行","交通"],["地铁","交通"],["公交","交通"],
+  ["加油","交通"],["停车","交通"],["高速","交通"],["etc","交通"],["高德","交通"],
+  ["航空","交通"],["机票","交通"],["铁路","交通"],["12306","交通"],["单车","交通"],
+  ["哈啰","交通"],["青桔","交通"],["美团单车","交通"],["车费","交通"],["洗车","交通"],
+  ["话费","通讯"],["流量","通讯"],["宽带","通讯"],["中国移动","通讯"],["中国联通","通讯"],
+  ["中国电信","通讯"],["充值","通讯"],["通信","通讯"],["会员","通讯"],["订阅","通讯"],
+  ["房租","居家"],["物业","居家"],["水费","居家"],["电费","居家"],["燃气","居家"],
+  ["取暖","居家"],["装修","居家"],["家具","居家"],["家居","居家"],["建材","居家"],
+  ["保洁","居家"],["家政","居家"],["宜家","居家"],["京东","购物"],["淘宝","购物"],
+  ["天猫","购物"],["拼多多","购物"],["唯品会","购物"],["小米","购物"],["苹果","购物"],
+  ["apple","购物"],["商城","购物"],["超市","购物"],["便利店","购物"],["百货","购物"],
+  ["商场","购物"],["旗舰店","购物"],["专卖店","购物"],["数码","购物"],["家电","购物"],
+  ["服饰","服饰"],["衣服","服饰"],["裤子","服饰"],["鞋子","服饰"],["鞋","服饰"],
+  ["外套","服饰"],["内衣","服饰"],["优衣库","服饰"],["耐克","服饰"],["阿迪","服饰"],
+  ["李宁","服饰"],["安踏","服饰"],["zara","服饰"],["h&m","服饰"],["服饰店","服饰"],
+  ["理发","日用"],["美容","日用"],["日用","日用"],["纸巾","日用"],["洗发","日用"],
+  ["牙膏","日用"],["沐浴","日用"],["洗衣","日用"],["洗护","日用"],["五金","日用"],
+  ["红包","人情"],["礼金","人情"],["随礼","人情"],["份子","人情"],["送礼","人情"],
+  ["人情","人情"],["捐赠","人情"],["孝敬","人情"],["压岁","人情"],["请客","人情"],
+  ["转账","人情"],["微信转账","人情"],
+  ["电影","娱乐"],["影城","娱乐"],["游戏","娱乐"],["steam","娱乐"],["健身","娱乐"],
+  ["旅游","娱乐"],["门票","娱乐"],["景点","娱乐"],["ktv","娱乐"],["演出","娱乐"],
+  ["音乐会","娱乐"],["密室","娱乐"],["剧本杀","娱乐"],["桌游","娱乐"],["视频会员","娱乐"],
+];
+/* 收款/退款类不进消费分类 */
+const INFLOW = ["退款","退货","收款","存入","转账收款","余额宝","零钱通","红包收款"];
+
+/* 按关键词长度降序匹配：保证「京东超市」先于「京东」、「美团买药」先于「美团」
+   否则短词会抢先把长词表达的更具体品类吃掉（词典顺序陷阱） */
+const RULES_SORTED = RULES.slice().sort((a, b) => b[0].length - a[0].length);
+function classify(who, note){
+  const s = ((who||"") + " " + (note||"")).toLowerCase();
+  for(const [k,v] of RULES_SORTED){ if(s.indexOf(k) >= 0) return v; }
+  return "其他";
+}
+function isInflow(t){
+  const s = t.toLowerCase();
+  return INFLOW.some(k => s.indexOf(k) >= 0);
+}
+
+/* ══════════════ 存储 ══════════════ */
+const KEY = "ledger.v1";
+const DB = { txns:[], budgets:{}, imports:[] };
+
+function load(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(raw){ const d = JSON.parse(raw); Object.assign(DB, d); }
+  }catch(e){ console.warn("load fail", e); }
+  if(!DB.txns) DB.txns = [];
+  if(!DB.budgets) DB.budgets = {};
+  if(!DB.imports) DB.imports = [];
+}
+let saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try{ localStorage.setItem(KEY, JSON.stringify(DB)); }
+    catch(e){ App.toast("保存失败：存储空间可能已满"); }
+  }, 120);
+}
+
+/* ══════════════ 工具 ══════════════ */
+const pad = n => String(n).padStart(2,"0");
+function ymd(d){ return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate()); }
+const today = () => ymd(new Date());
+const money = n => "¥" + (Math.round(n*100)/100).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function parseDate(s){
+  if(!s) return "";
+  const t = String(s).trim().replace(/[年月]/g,"-").replace(/日/g,"")
+    .replace(/\//g,"-").replace(/\./g,"-");
+  const m = t.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(!m) return "";
+  return m[1]+"-"+pad(+m[2])+"-"+pad(+m[3]);
+}
+function parseAmt(s){
+  if(s==null) return 0;
+  const n = parseFloat(String(s).replace(/[¥￥,\s元]/g,""));
+  if(isNaN(n)) return 0;
+  /* 规整到分：Excel 的浮点存储会产生 89.90000000000001 这类值，
+     不处理会直接显示给用户，也会让跨渠道去重的 ±0.01 判断失效 */
+  return Math.round(Math.abs(n) * 100) / 100;
+}
+/* 归一化对方名，便于跨渠道识别同一笔 */
+function norm(s){
+  return String(s||"").replace(/[（(].*?[)）]/g,"").replace(/[\s\-_.、,，。]/g,"").toLowerCase();
+}
+function daysBetween(a,b){ return Math.abs(new Date(a)-new Date(b))/864e5; }
+/* File → ArrayBuffer。指纹计算要在解析前拿到原始字节。 */
+function toArrayBuffer(file){
+  return new Promise((res, rej) => {
+    if(file.__buf) { res(file.__buf); return; }   /* 测试路径直接给字节 */
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result);
+    fr.onerror = () => rej(new Error("文件读取失败"));
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+/* ══════════════ CSV 解析 ══════════════ */
+/* CSV 文本解码。优先用 TextDecoder（快且能处理 GBK），
+   不可用时退回纯 JS 的 utf8()，保证老内核也能读 */
+function decode(buf){
+  const u8 = new Uint8Array(buf);
+  /* 编码判定：支付宝/银行导出是 GBK，微信/京东是 UTF-8(BOM)。
+     ⚠️ 难点：GBK 字节有时能被 UTF-8 "合法"解码成乱码，此时没有替换字符可判断。
+     办法是看"像不像中文账单"：命中账单关键词才算 UTF-8 正确。 */
+  const looksLikeBill = t => /交易时间|交易号|交易创建时间|收\/支|商户名称|交易对方|金额|微信|支付宝|京东/.test(t);
+  if(typeof TextDecoder !== "undefined"){
+    try{
+      let u = new TextDecoder("utf-8").decode(u8);
+      if(u.indexOf("\uFFFD") < 0 && looksLikeBill(u)) return u;
+      try{
+        const g = new TextDecoder("gbk").decode(u8);
+        if(g.indexOf("\uFFFD") < 0 && looksLikeBill(g)) return g;
+      }catch(e){}
+      /* 两者都不像账单：优先给没有乱码的那个 */
+      if(u.indexOf("\uFFFD") < 0) return u;
+      try{ return new TextDecoder("gbk").decode(u8); }catch(e2){}
+      return u;
+    }catch(e){}
+  }
+  return utf8(u8);
+}
+
+/* CSV/TSV 切分。
+   ⚠️ 必须同时支持逗号和制表符：京东、支付宝导出的明细是 TSV（\t 分隔），
+   只按逗号切会让整行变成一列，方向判定失效 → 全部误判成退款。 */
+/* CSV/TSV 切分。
+   ⚠️ 真实账单的分隔符比想象中混乱：
+   - 京东导出是「逗号 + 尾部制表符」混合（...\t,131500261003...\t）
+   - 支付宝导出是纯制表符
+   - 微信导出是纯逗号
+   所以逗号和制表符都要当分隔符，先切再把纯空白列丢掉。 */
+function splitCSV(text){
+  const rows = []; let row = [], cur = "", q = false;
+  for(let i=0;i<text.length;i++){
+    const c = text[i];
+    if(q){
+      if(c === '"'){ if(text[i+1] === '"'){ cur += '"'; i++; } else q = false; }
+      else cur += c;
+    }else{
+      if(c === '"') q = true;
+      /* 「\t,」「,\t」「\t,\t」在京东导出里都表示同一个列边界，
+         逐字符切会把它们当成两个分隔符，凭空多出一列。
+         做法：连续的分隔符只算一次。 */
+      else if(c === "," || c === "\t"){
+        if(cur !== "" || row.length) row.push(cur);
+        cur = "";
+        while(text[i+1] === "," || text[i+1] === "\t") i++;
+      }
+      else if(c === "\n"){ if(cur !== "" || row.length) row.push(cur); rows.push(row); row = []; cur = ""; }
+      else if(c === "\r"){ /* 跳过 */ }
+      else cur += c;
+    }
+  }
+  if(cur !== "" || row.length){ row.push(cur); rows.push(row); }
+  return rows;
+}
+
+
+/* 平台登记表：靠特征列认出已知平台 */
+const HEADS = {
+  wechat: { date:["交易时间"], dir:["收/支"], amt:["金额(元)","金额（元）","金额"],
+            who:["交易对方"], note:["商品","交易备注"], st:["当前状态","交易状态"],
+            pay:["收/付款方式","支付方式","付款方式"], ch:"wechat", nm:"微信" },
+  alipay: { date:["交易创建时间","付款时间","交易时间"], dir:["收/支"], amt:["金额"],
+            who:["交易对方"], note:["商品名称","商品说明","备注"],
+            st:["交易状态","资金状态"], cat:["交易分类"],
+            pay:["收/付款方式","支付方式","付款方式"], ch:"alipay", nm:"支付宝" },
+  jd:     { date:["交易时间"], dir:["收/支"], amt:["金额"], who:["商户名称"],
+            note:["交易说明","商品名称","备注"], st:["交易状态"], ch:"jd", nm:"京东" },
+};
+function detectHead(row){
+  const cells = row.map(c => String(c).replace(/\s/g,""));
+  const has = keys => keys.some(k => cells.indexOf(k) >= 0);
+  /* ⚠️ 京东也有「交易时间」+「收/支」，和微信撞车。
+     靠「商户名称」区分：京东叫"商户名称"，微信叫"交易对方"。 */
+  /* ⚠️ 京东 vs 美团月付：表头几乎一样（交易时间 + 商户名称 + 商品说明）。
+     区别是京东有「收/支」列，月付没有 —— 必须同时有「收/支」才算京东。 */
+  if(has(HEADS.jd.who) && has(HEADS.jd.date) && has(HEADS.jd.dir)) return "jd";
+  /* ⚠️ 支付宝的新版导出表头是「交易时间」+「收/支」+「交易分类」，
+     和微信撞车。靠「交易分类」这一列区分（微信叫"商品"）。 */
+  if(has(HEADS.alipay.cat) && has(HEADS.alipay.date) && has(HEADS.alipay.dir)) return "alipay";
+  if(has(HEADS.wechat.date) && has(HEADS.wechat.dir)) return "wechat";
+  if(has(HEADS.alipay.date) && has(HEADS.alipay.dir)) return "alipay";
+  return null;
+}
+
+/* 渠道嗅探：文件名 + 表头内容一起判断，用于不认识格式的账单
+   ⚠️ 平台专名必须排在通用词前面：
+   "抖音月付" 里也有"月付"，若通用词先命中会被误判成美团月付 */
+const CHANNELS = [
+  [/(白条|京东|jingdong|\bjd\b)/i,          "jd",       "京东白条"],
+  [/(抖音|douyin|花呗|字节|tiktok)/i,       "douyin",   "抖音月付"],
+  [/(美团|meituan)/i,                       "meituan",  "美团月付"],
+  [/(云闪付|unionpay|银联)/i,               "unionpay", "云闪付"],
+  [/(微信|wechat|weixin)/i,                 "wechat",   "微信"],
+  [/(支付宝|alipay|蚂蚁)/i,                 "alipay",   "支付宝"],
+  [/(银行|bank|信用卡|储蓄卡)/i,            "bank",     "银行卡"],
+  /* 通用词放最后：仅在没有平台专名时兜底 */
+  [/(月付|账单明细|交易明细)/,               "other",    "其他"],
+];
+function sniffChannel(fname, cells){
+  const hay = fname + " " + cells.join(" ");
+  for(const [re, code, nm] of CHANNELS) if(re.test(hay)) return { ch:code, nm };
+  return { ch:"other", nm:"其他" };
+}
+/* 手动录入时的渠道选项 */
+const CH_SEL = [
+  { code:"wechat",   nm:"微信支付" },
+  { code:"alipay",   nm:"支付宝" },
+  { code:"jd",       nm:"京东白条" },
+  { code:"meituan",  nm:"美团月付" },
+  { code:"douyin",   nm:"抖音月付" },
+  { code:"unionpay", nm:"云闪付" },
+  { code:"bank",     nm:"银行卡" },
+  { code:"cash",     nm:"现金" },
+  { code:"other",    nm:"其他" },
+];
+/* 按历史记录猜常用渠道，减少一次选择 */
+function guessCh(){
+  const tally = {};
+  DB.txns.forEach(t => { if(t.ch) tally[t.ch] = (tally[t.ch]||0) + 1; });
+  const best = Object.keys(tally).sort((a,b) => tally[b]-tally[a])[0];
+  return best && tally[best] >= 2 ? best : "wechat";
+}
+
+/* 通用列识别：按关键词特征猜列，不依赖固定表头
+   顺序敏感——先匹配更具体的词，"交易时间" 先于 "时间" */
+function guessCols(cells){
+  const used = new Set();
+  const find = keys => {
+    for(const k of keys){
+      const i = cells.findIndex((c, idx) => !used.has(idx) && c.indexOf(k) >= 0);
+      if(i >= 0){ used.add(i); return i; }
+    }
+    return -1;
+  };
+  const m = {};
+  m.date  = find(["交易时间","交易日期","日期","时间","记账日期","创建时间","付款时间","消费时间"]);
+  m.amt   = find(["金额","发生额","交易额","订单金额","消费金额","已还金额","待还金额"]);
+  m.who   = find(["交易对方","对方户名","对方","商户名称","商家","商户","店铺","收款方","机构"]);
+  m.note  = find(["商品名称","商品","备注","摘要","说明","用途","订单说明","交易说明"]);
+  m.st    = find(["交易状态","还款状态","订单状态","资金状态","状态"]);
+  m.pay   = find(["收/付款方式","支付方式","付款方式","支付渠道"]);
+  /* 方向列与类型列要分开：退款判定依赖「类型」列的精确值（"退款"） */
+  m.dir   = find(["收/支","收支","交易方向","借贷标志","借贷","方向"]);
+  m.type  = find(["交易类型","类型","业务类型"]);
+  /* dir 没找到时退回 type */
+  if(m.dir < 0) m.dir = m.type;
+  return m;
+}
+
+/* ══════════════ 退款识别 ══════════════
+   退款是独立一类，既不是收入也不是普通支出：
+   - 计入收入会让「本月结余」虚高（退款不是挣到的钱）
+   - 丢掉会让净支出虚高（买手机 5999 退回，账本还挂着 5999 支出）
+   所以退款单独记为 dir="refund"，统计时从支出中扣除。
+
+   ⚠️ 判定必须靠结构化字段，不能扫全行跑大正则：
+   微信一笔正常收入的交易类型会写「Apple-退款」（退款是商品名的一部分），
+   只按「退款」二字匹配会把它误判成退款，把金额从支出里扣掉。 */
+const REFUND_STRONG = /不计收支|不计入收支/;   /* 收/支列的写法（支付宝/京东都有） */
+const REFUND_DONE_RE = /退款成功|已退款|已退完|退款完成|全额退款|已退货|退货成功|已取消交易|交易关闭/;
+const REFUND_TYPE_RE = /^退款$|^退货$|^退款退货|退款$|退货$/;
+
+/* 商品名形如「退款-iPhone」是退款的强特征 */
+function refundByItem(who, note, typeRaw){
+  const s = String(who||"") + " " + String(note||"");
+  const t = s.trim();
+  if(/^(退款|退货)-/.test(t) || /^退款-/.test(t)) return true;
+  if(typeRaw && REFUND_TYPE_RE.test(String(typeRaw).trim())) return true;
+  return false;
+}
+
+/* ══════════════ 还款（settle）判定 ══════════════
+   还款的本质特征是【用银行/储蓄卡去还信用支付】，而不是消费本身。
+   京东账单最能说明问题：
+     咖啡 / 披萨 / 纸尿裤   收/支=支出  付款方式=京东白条   → 真消费
+     白条主动还款           收/支=不计收支 付款方式=工商银行转账 → 真还款
+   两者都含"白条"二字，光看关键词必然误判。判据优先级：
+     1) 交易说明/状态列明确写「主动还款」「账单还款」「还款成功」→ 还款
+     2) 付款方式是「银行转账/储蓄卡/借记卡」而说明里提到白条/花呗/月付 → 还款
+     3) 「已还清/已结清」等完成态 → 还款
+   光有「白条」二字不算 —— 那是支付方式，不是行为。 */
+const SETTLE_STRONG = /主动还款|账单还款|信用卡还款|白条还款|花呗还款|月付还款|还款成功|已还清|已还完|已结清|结清还款/;
+/* 付款方式里出现这些，说明是「用银行卡/钱包去还」，即还款 */
+const PAY_BACK_RE = /转账|储蓄卡|借记卡|银行还款|零钱通|余额宝/;
+const CREDIT_RE = /白条|花呗|月付|信用卡|分期/;
+
+/* 退款行的精确判据。
+   京东「不计收支」行混了三类：下单 / 退款 / 价保退款，靠金额列和说明列区分：
+     退款-Apple iPhone      9999.00              ← 退款行（说明带"退款-"前缀）
+     Apple iPhone   9999.00(已全额退款)          ← 退款行（金额带"(已全额退款)"）
+     价保退款-李锦记…        0.73                 ← 价保退款（部分退回）
+     Apple iPhone           9999.00              ← 下单行（什么都没标，是真消费）
+   之前把「不计收支」一律当退款，导致下单行被扣掉、净支出归零。 */
+function isRefundLine(who, note, amtRaw, stRaw, typeRaw, dirRaw){
+  const amt = String(amtRaw == null ? "" : amtRaw);
+  const st  = String(stRaw || "");
+  const whoS = String(who||""), noteS = String(note||"");
+  const t0 = (noteS + " " + whoS).trim();
+
+  /* ⚠️ 收/支写「收入」的行要分两种：
+     - 说明带「退款-」前缀 → 是退款行（微信导出就是这样，退款打进零钱记收入）
+     - 说明是纯商品名（如「Apple」）→ 是正常收入，不能当退款
+     判据是说明列，不是收/支列。 */
+  const d = String(dirRaw == null ? "" : dirRaw).replace(/\s/g,"");
+  const isIncomeRow = /收入|收款|入账|进账/.test(d);
+  if(isIncomeRow && !/^(退款|退货|价保退款|价保退货)-/.test(t0)) return false;
+  if(isIncomeRow && !REFUND_DONE_RE.test(st)) return false;
+
+  /* ⚠️ 京东的「不计收支」里，下单行和退款行是成对的，方向相反：
+       2026-09-12  Apple iPhone  9999.00(已全额退款)   ← 下单行：钱已付出去，是支出
+       2026-09-14  退款-Apple iPhone  9999.00          ← 退款行：钱退回来
+     京东账单声明「支出13笔(含1笔部分退款)」，13 笔里不含退款行。
+     所以金额带「(已全额退款)」后缀的那笔是【支出】，不是退款 ——
+     之前判反了，导致 9999 被当成退款扣掉、净支出归零。 */
+  if(/[（(]\s*已全额退款\s*[）)]/.test(amt)){
+    /* 带这个后缀且没有「退款-」前缀 → 下单行（钱已付，是支出） */
+    if(!/^(退款|退货|价保退款|价保退货)-/.test(t0)) return false;
+  }
+  /* 说明以「退款-」「退货-」「价保退款-」开头 → 退款行 */
+  if(/^(退款|退货|价保退款|价保退货)-/.test(t0)) return true;
+  /* 强特征 3：类型列精确是「退款」「退货」 */
+  if(typeRaw && REFUND_TYPE_RE.test(String(typeRaw).trim())) return true;
+  /* 强特征 4：收/支列写「不计收支」且状态/备注出现退款字样 */
+  if(REFUND_STRONG.test(d) && /退款|退货/.test(st + " " + noteS)) return true;
+  return false;
+}
+
+function isSettle(row, idxs, amtRaw, payRaw){
+  const st = idxs && idxs.st >= 0 ? String(row[idxs.st] || "") : "";
+  const note = idxs && idxs.note >= 0 ? String(row[idxs.note] || "") : "";
+  const who = idxs && idxs.who >= 0 ? String(row[idxs.who] || "") : "";
+  const pay = payRaw !== undefined && payRaw !== null ? String(payRaw) : "";
+  const core = st + " " + note;
+
+  /* 1) 明确写了还款动作 */
+  if(SETTLE_STRONG.test(core)) return true;
+  /* 2) 用银行/钱包去还信用支付：付款方式是资金渠道，说明里提到信用支付 */
+  if(PAY_BACK_RE.test(pay) && CREDIT_RE.test(core + " " + who)) return true;
+  /* 3) 负数金额 + 提到信用支付 —— 老账单的兜底 */
+  const raw = String(amtRaw == null ? "" : amtRaw).replace(/[¥￥,\s元]/g, "");
+  const n = parseFloat(raw);
+  if(!isNaN(n) && n < 0 && CREDIT_RE.test(core + " " + who + " " + pay)) return true;
+  return false;
+}
+
+/* 方向判定。
+   ⚠️「不计收支」≠ 退款。京东账单原文：
+     "个人资金互转、全额退款等记为【不计收支】类"
+   也就是说这个值同时包含「个人转账」和「全额退款」两种语义，
+   靠它一律判退款会让个人转账凭空变成退款。正确做法：
+   方向记为 neutral（中性，不进收支统计），再由「交易状态/交易说明」
+   判断它到底是退款还是转账。 */
+function guessDir(row, dirIdx, amtRaw){
+  if(dirIdx >= 0){
+    const v = String(row[dirIdx]||"");
+    if(REFUND_STRONG.test(v)) return "neutral";   /* 交给上层细分 */
+    if(/收入|收款|入账|贷|返现|已收|收钱/.test(v)) return "in";
+    if(/支出|付款|出账|借|消费|支付|扣款|还款/.test(v)) return "out";
+  }
+  const raw = String(amtRaw==null ? "" : amtRaw).replace(/[¥￥,\s元]/g,"");
+  const num = parseFloat(raw);
+  if(!isNaN(num) && num < 0) return "in";
+  return "out";
+}
+
+/* 跳过表头前的说明行/分隔行，找到真实表头
+   扫全表而非只扫前 40 行：微信账单抬头就有 15 行，加上「共 N 笔」等统计行，
+   某些导出还会插入更多说明，限制 40 行容易漏掉真正表头 */
+function findHeader(rows){
+  const n = rows.length;
+  for(let i=0;i<n;i++){
+    const plat = detectHead(rows[i]);
+    if(plat){
+      const cfg = HEADS[plat];
+      const cells = rows[i].map(c => String(c).replace(/\s/g,""));
+      const idx = key => { for(const k of key){ const j = cells.indexOf(k); if(j >= 0) return j; } return -1; };
+      return {
+        plat, nm:cfg.nm, ch:cfg.ch,
+        di: idx(cfg.date), ri: idx(cfg.dir), ai: idx(cfg.amt),
+        wi: idx(cfg.who), ni: idx(cfg.note), si: idx(cfg.st),
+        pi: idx(cfg.pay || []), ci: idx(cfg.cat || []), start:i+1
+      };
+    }
+  }
+  /* 已知平台没匹配上 → 通用兜底：找一行同时含日期词和金额词 */
+  for(let i=0;i<n;i++){
+    const cells = rows[i].map(c => String(c).replace(/\s/g,""));
+    const g = guessCols(cells);
+    if(g.date >= 0 && g.amt >= 0) return Object.assign({ plat:"generic", start:i+1 }, g);
+  }
+  return null;
+}
+
+function parseFile(file, fname){
+  fname = fname || file.name || "";
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = async () => {
+      try{
+        const buf = fr.result;
+        const u8 = new Uint8Array(buf, 0, 4);
+        /* 按文件内容判断而非扩展名：有的手机会把 CSV 存成 .xlsx */
+        const isZip = u8[0]===0x50 && u8[1]===0x4B && u8[2]===0x03 && u8[3]===0x04;
+        const isXls = u8[0]===0xD0 && u8[1]===0xCF && u8[2]===0x11 && u8[3]===0xE0;
+        if(isXls)
+          throw new Error("这是旧版 .xls 格式，手机打不开。请用 Excel/WPS 打开后「另存为」.xlsx 或 .csv 再导入。");
+
+        let sheets, fmt;
+        if(isZip){
+          sheets = (await parseXLSX(buf)).sheets;
+          fmt = "xlsx";
+        }else{
+          const rows = splitCSV(decode(buf)).filter(r => r.some(c => String(c).trim()));
+          sheets = [{ name:"", rows }];
+          fmt = "csv";
+        }
+        if(!sheets.length) throw new Error("文件读出来是空的，可能是文件损坏或不是账单文件");
+        /* 各工作表行数写进诊断信息，报错时能定位 */
+        const diag = sheets.map(s => (s.name || "表") + " " + s.rows.length + " 行").join(" / ");
+
+        /* 逐个工作表尝试，找到第一个能识别出账单表头的就用它
+           （一个 Excel 里常混着「说明」「汇总」等无关页） */
+        let h = null, rows = null;
+        for(const sh of sheets){
+          const cand = findHeader(sh.rows);
+          if(cand){
+            /* 以表头列数为准对齐各行，修正「	,」造成的整体右移 */
+            h = cand; rows = sh.rows; break;
+          }
+        }
+        if(!h){
+          rej(new Error(`没找到账单表头（已读：${diag}）。请确认表格里有「交易时间/日期」和「金额」两列。`));
+          return;
+        }
+
+        if(h.plat === "generic"){
+          const sn = sniffChannel(fname, rows[h.start-1] || []);
+          const r = parseGeneric(rows, h, sn);
+          r.fmt = fmt;
+          res(r);
+          return;
+        }
+        const out = [], skip = [];
+        for(let i=h.start;i<rows.length;i++){
+          const r = rows[i];
+          const d = parseDate(r[h.di]);
+          const dirRaw = h.ri>=0 ? String(r[h.ri]||"").trim() : "";
+          const amt = parseAmt(h.ai>=0 ? r[h.ai] : 0);
+          if(!d || !amt){ skip.push({line:i+1, raw:(r||[]).join(" ").slice(0,50)}); continue; }
+          const who = h.wi>=0 ? String(r[h.wi]||"").trim() : "";
+          const note = h.ni>=0 ? String(r[h.ni]||"").trim() : "";
+          const label = (who || note || "未标注").slice(0,40);
+    /* 微信/支付宝标准格式：收/支列或状态列是可靠证据
+       顺序很重要：先判还款（settle），再判退款。
+       「已还清」这类状态既是还款又像退款，还款优先。 */
+    const stRaw = h.si>=0 ? String(r[h.si]||"") : "";
+    /* 判定要扫整行：白条还款行的关键词常在「备注」列，不在「商品」列 */
+    const whole = (r||[]).join(" ");
+    const isSettleRow = isSettle(r, {st:h.si, note:h.ni, who:h.wi}, h.ai >= 0 ? r[h.ai] : 0, h.pi >= 0 ? r[h.pi] : "");
+    let neutralRow = false;
+    const amtRaw = h.ai >= 0 ? r[h.ai] : "";
+    /* 理财资金搬运：支付宝把「基金买入」记成收入，但那是把钱从余额宝划到基金，
+       不是挣到的钱。判定：交易对方或说明含基金/理财/余额宝，且金额不是零星收益。 */
+    /* 理财资金搬运：把余额宝/基金里的钱挪个地方，不算收入也不算支出。
+       支付宝把这些记成「不计收支」（部分场景记「收入」），
+       靠「交易对方/说明含理财词 + 金额非零星」识别，收益发放则是真收入要排除。 */
+    const wealthTxt = who + " " + note + " " + stRaw;
+    /* ⚠️ 排除条件要精确：基金名可能叫「中银收益混合A」，
+       所以不能笼统排除「收益」二字，只能排除「收益发放」这种动作词。 */
+    const isFundMove = /基金|理财|余额宝|蚂蚁财富|零钱通|天弘|定期|保险/.test(wealthTxt)
+      && !/收益发放|利息发放|分红|赎回|理赔|到账/.test(wealthTxt)
+      && Math.abs(parseAmt(amtRaw)) >= 1;
+    const wealthMove = isFundMove
+      && (REFUND_STRONG.test(dirRaw) || /收入|进账/.test(String(dirRaw||"")));
+    const refunded = !isSettleRow && isRefundLine(who, note, amtRaw, stRaw, "", dirRaw);
+    let dir;
+    if(wealthMove && !refunded) { dir = "out"; neutralRow = true; }
+    else if(refunded) dir = "refund";
+    else if(/收入|收$|贷|入账|进账/.test(dirRaw)) dir = "in";
+    else if(/支出|付$|借|出账/.test(dirRaw)) dir = "out";
+    /* 「不计收支」是个筐，里面混了至少四类，必须靠付款方式/说明细分：
+       ① 信用支付下单（金额带"(已全额退款)"、付款方式=白条）→ 真消费，算支出
+       ② 理财收益（说明=余额宝-收益发放）→ 真收入
+       ③ 个人互转/还款（付款方式=银行卡转账）→ 中性，不算收支
+       ④ 退款 → 前面已判为 refund
+       判不出来时保守当「中性」，宁可少算也不虚增支出。 */
+    /* ⚠️ 口径必须按各平台账单自己的说明，不能自创。
+   京东账单原文（第 13 行特别提示）：
+     「个人资金互转、全额退款等记为【不计收支】类，
+       部分退款的支出金额为剔除退款后的支付金额」
+   即：
+     · 全额退款的下单行（金额带"(已全额退款)"）→ 连同退款行都进「不计收支」，
+       两笔互相抵消，谁也不算消费。判成支出再靠配对扣回是绕路，
+       遇到「下单行不在账单里」的往期退款就会虚增支出。
+     · 部分退款（金额带"(已退款X)"）→ 仍是支出，但京东已经把金额改成扣除后的值。
+   其余「不计收支」的成因靠付款方式/说明细分：
+     ② 理财收益 → 真收入
+     ②b 理财买卖（余额宝/基金划转）→ 资金搬运，中性
+     ③ 还款 / 个人互转（付款方式=银行卡转账）→ 中性
+     ④ 判不出来 → 保守当中性，宁可少算也不虚增支出 */
+    else if(REFUND_STRONG.test(dirRaw)){
+      const amtS   = String(h.ai >= 0 ? r[h.ai] : "");
+      const payS   = String(h.pi >= 0 ? r[h.pi] : "");
+      const catS   = String(h.ci >= 0 ? r[h.ci] : "");
+      const allTxt = (catS + " " + note + " " + who + " " + payS);
+      if(/[（(]\s*已全额退款\s*[）)]/.test(amtS)){
+        dir = "out"; neutralRow = true;  /* ① 全额退款下单行：与退款行对冲，不算消费 */
+      }else if(/收益|利息|分红/.test(allTxt)){
+        dir = "in";                      /* ② 理财收益（0.01 这种） */
+      }else if(/蚂蚁财富|余额宝|理财|基金|转入|转出|买入|赎回/.test(allTxt)){
+        dir = "out"; neutralRow = true;  /* ②b 理财买卖：资金搬运，不是收入 */
+      }else if(isSettleRow || PAY_BACK_RE.test(payS)){
+        dir = "out"; neutralRow = true;  /* ③ 还款 / 个人互转 */
+      }else if(/白条|花呗|月付|信用卡|分期/.test(payS)){
+        dir = "out";                     /* ④ 信用支付消费 */
+      }else{
+        dir = "out"; neutralRow = true;  /* 判不出来 → 中性 */
+      }
+    }
+    else { skip.push({line:i+1, raw:dirRaw}); continue; }
+    /* 白条/月付还款行收/支可能写「收入」但金额是负数、状态是已还清 ——
+       那是资金流出不是进账，纠正成支出并标 settle */
+    if(isSettleRow && dir === "in") dir = "out";
+          out.push(buildTxn({
+            date:d, dir, amt, amtRaw, who, note, ch:h.ch, src:h.nm,
+            settle: isSettleRow || neutralRow
+          }));
+        }
+        res({ plat:h.plat, nm:h.nm, rows:out, skip, headLine:h.start, fmt });
+      }catch(e){ rej(e); }
+    };
+    fr.onerror = () => rej(new Error("文件读取失败"));
+    fr.readAsArrayBuffer(file);
+  });
+}
+
+/* 通用账单解析（美团月付 / 抖音月付 / 云闪付 / 白条 / 银行卡等） */
+function parseGeneric(rows, h, sn){
+  const out = [], skip = [];
+  for(let i=h.start;i<rows.length;i++){
+    const r = rows[i];
+    const d = parseDate(h.date >= 0 ? r[h.date] : "");
+    const amt = parseAmt(h.amt >= 0 ? r[h.amt] : 0);
+    if(!d || !amt){ skip.push({line:i+1, raw:(r||[]).join(" ").slice(0,50)}); continue; }
+    let dir = guessDir(r, h.dir, h.amt >= 0 ? r[h.amt] : 0);
+    const who = h.who  >= 0 ? String(r[h.who]||"").trim()  : "";
+    const note = h.note >= 0 ? String(r[h.note]||"").trim() : "";
+    const st   = h.st   >= 0 ? String(r[h.st]||"").trim()   : "";
+    const label = (who || note || sn.nm).slice(0,40);
+  /* 还款行：不计为新消费，单独标记
+     信用支付账单（白条/月付）的负数金额表示"还款扣款"，属于资金流出，
+     不能当成收入——否则账本会凭空多出一笔进账 */
+  const typeRaw = h.type >= 0 ? String(r[h.type]||"").trim() : "";
+  /* 扫整行：白条/月付的还款关键词常在「备注」「商品说明」等列，不固定 */
+  const settleFirst = isSettle(r, {st:h.st, note:h.note, who:h.who}, h.amt >= 0 ? r[h.amt] : 0, h.pay >= 0 ? r[h.pay] : "");
+  /* 还款行优先于方向判定：白条/月付还款金额是负数，guessDir 会判成
+     "in"（收入），但它实际是资金流出，必须纠正成 out + settle。 */
+  if(settleFirst && dir !== "out" && dir !== "neutral") dir = "out";
+  /* 退款判定：收/支列写「不计收支」是强证据（支付宝独有）；
+     其次看类型列精确值是"退款"，再看商品名形如「退款-xxx」。
+     settleFirst 为真时不算退款 —— 「已还清」是还款不是退款。 */
+  /* 退款证据：类型列精确是"退款"，或商品名形如「退款-xxx」，或状态列写退款成功。
+     ⚠️「不计收支」本身不算退款证据 —— 京东的"不计收支"还包含个人互转。 */
+  const amtRaw = h.amt >= 0 ? r[h.amt] : "";
+  const refundEvidence = dir === "refund"
+    || isRefundLine(who, note, amtRaw, st, typeRaw, h.dir >= 0 ? r[h.dir] : "");
+  const refund = !settleFirst && refundEvidence;
+  /* neutral（不计收支且无退款证据）= 个人互转等中性资金流，按结算处理 */
+  const settle = settleFirst || dir === "neutral";
+  out.push(buildTxn({ date:d, dir: refund ? "refund" : dir, amt, amtRaw, who, note,
+                      ch:sn.ch, src:sn.nm, settle, refund, neutral: dir === "neutral" }));
+  }
+  return { plat:"generic", nm:sn.nm, rows:out, skip, headLine:h.start, fmt:"" };
+}
+
+/* 统一构造记录：自动分类 + 收入行不计消费分类 */
+function buildTxn(o){
+  const label = o.who || o.note || "未标注";
+  const inflow = o.dir === "in" && isInflow(label + " " + (o.note||""));
+  /* 退款保持原消费分类的判定基础，但标记为「退款」以便统计时扣除 */
+  const cat = o.settle ? "还款"
+    : o.dir === "refund" ? "退款"
+    : o.dir === "out" && !inflow ? classify(label, o.note)
+    : o.dir === "in" ? "收入" : "退款";
+  return {
+    date:o.date, dir:o.dir, amt:o.amt, who:label.slice(0,40), note:o.note || "",
+    amtRaw: o.amtRaw == null ? "" : String(o.amtRaw),
+    cat, ch:o.ch, src:o.src, settle:o.settle ? 1 : 0,
+    neutral: (o.dir === "neutral" || o.neutral) ? 1 : 0,
+    refund: o.dir === "refund" ? 1 : 0,
+    catAuto:true, dup:null
+  };
+}
+
+/* ══════════════ XLSX 解析（.xlsx / .xlsm）══════════════
+   xlsx = ZIP 压缩包 + XML。这里的解压是纯 JS 实现（DEFLATE / RFC 1951），
+   不依赖 DecompressionStream、Blob、Response 等 API —— 那些在微信内置浏览器
+   等老内核上支持不一致，会静默失败。实测字节级一致。*/
+
+/* ─────────── 位读取器（DEFLATE 是 LSB-first 的位流）─────────── */
+function BitReader(src){
+  this.src = src; this.pos = 0; this.buf = 0; this.cnt = 0;
+}
+BitReader.prototype.bit = function(){
+  if(this.cnt === 0){
+    if(this.pos >= this.src.length) throw new Error("数据意外结束");
+    this.buf = this.src[this.pos++]; this.cnt = 8;
+  }
+  const b = this.buf & 1;
+  this.buf >>= 1; this.cnt--;
+  return b;
+};
+BitReader.prototype.bits = function(n){
+  let v = 0;
+  for(let i = 0; i < n; i++) v |= this.bit() << i;
+  return v;
+};
+
+/* ─────────── 规范霍夫曼表 ─────────── */
+function buildTree(lengths){
+  const MAXBITS = 15;
+  const count = new Int32Array(MAXBITS + 1);
+  for(let i = 0; i < lengths.length; i++) count[lengths[i]]++;
+  count[0] = 0;
+  const offs = new Int32Array(MAXBITS + 2);
+  for(let i = 1; i <= MAXBITS; i++) offs[i + 1] = offs[i] + count[i];
+  const symbol = new Int32Array(lengths.length);
+  for(let i = 0; i < lengths.length; i++)
+    if(lengths[i]) symbol[offs[lengths[i]]++] = i;
+  return { count, symbol };
+}
+function decodeSymbol(br, tree){
+  let code = 0, first = 0, index = 0;
+  for(let len = 1; len <= 15; len++){
+    code |= br.bit();
+    const n = tree.count[len];
+    if(code - first < n) return tree.symbol[index + (code - first)];
+    index += n;
+    first = (first + n) << 1;
+    code <<= 1;
+  }
+  throw new Error("无效的霍夫曼编码");
+}
+
+/* ─────────── 长度/距离基础表 ─────────── */
+const LBASE = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258,259];
+const LEXT  = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0,0];
+const DBASE = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+const DEXT  = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+const CLCIDX = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+
+/* 固定表（RFC 1951 3.2.6） */
+let FIX_LIT = null, FIX_DIST = null;
+function buildFixed(){
+  const l = new Uint8Array(288);
+  let i = 0;
+  for(; i < 144; i++) l[i] = 8;
+  for(; i < 256; i++) l[i] = 9;
+  for(; i < 280; i++) l[i] = 7;
+  for(; i < 288; i++) l[i] = 8;
+  FIX_LIT = buildTree(l);
+  FIX_DIST = buildTree(new Uint8Array(30).fill(5));
+}
+buildFixed();
+
+/* 动态表 */
+function readDynamic(br){
+  const nlen  = br.bits(5) + 257;
+  const ndist = br.bits(5) + 1;
+  const ncode = br.bits(4) + 4;
+  if(nlen > 286 || ndist > 30) throw new Error("动态表长度非法");
+  const cl = new Uint8Array(19);
+  for(let i = 0; i < ncode; i++) cl[CLCIDX[i]] = br.bits(3);
+  const clTree = buildTree(cl);
+  const lengths = new Uint8Array(nlen + ndist);
+  let i = 0;
+  while(i < nlen + ndist){
+    const sym = decodeSymbol(br, clTree);
+    if(sym < 16){ lengths[i++] = sym; }
+    else if(sym === 16){
+      if(i === 0) throw new Error("码长重复指令位置非法");
+      const prev = lengths[i - 1];
+      let rep = 3 + br.bits(2);
+      while(rep-- && i < lengths.length) lengths[i++] = prev;
+    }
+    else if(sym === 17){ let rep = 3 + br.bits(3); while(rep-- && i < lengths.length) lengths[i++] = 0; }
+    else { let rep = 11 + br.bits(7); while(rep-- && i < lengths.length) lengths[i++] = 0; }
+  }
+  return { lit: buildTree(lengths.subarray(0, nlen)), dist: buildTree(lengths.subarray(nlen)) };
+}
+
+/* 核心：解压一个 DEFLATE 块 */
+function inflateBlock(br, out, litTree, distTree){
+  for(;;){
+    const sym = decodeSymbol(br, litTree);
+    if(sym < 256){ out.push(sym); }
+    else if(sym === 256){ return; }
+    else{
+      const li = sym - 257;
+      if(li >= 29) throw new Error("长度码非法");
+      const len = LBASE[li] + br.bits(LEXT[li]);
+      const di = decodeSymbol(br, distTree);
+      if(di >= 30) throw new Error("距离码非法");
+      const dist = DBASE[di] + br.bits(DEXT[di]);
+      const start = out.length - dist;
+      if(start < 0) throw new Error("距离越界");
+      for(let k = 0; k < len; k++) out.push(out[start + k]);
+    }
+  }
+}
+
+function inflateRaw(src){
+  const br = new BitReader(src);
+  const out = [];
+  for(;;){
+    const last = br.bit();
+    const type = br.bits(2);
+    if(type === 0){
+      /* 存储块：对齐到字节后读长度 */
+      br.cnt = 0; br.buf = 0;
+      const len  = src[br.pos] | (src[br.pos+1] << 8);
+      br.pos += 4;
+      for(let i = 0; i < len; i++) out.push(src[br.pos++]);
+    }else if(type === 1){
+      inflateBlock(br, out, FIX_LIT, FIX_DIST);
+    }else if(type === 2){
+      const t = readDynamic(br);
+      inflateBlock(br, out, t.lit, t.dist);
+    }else{
+      throw new Error("无效的块类型");
+    }
+    if(last) break;
+  }
+  return new Uint8Array(out);
+}
+
+/* ─────────── ZIP ─────────── */
+function unzipStore(buf){
+  const dv = new DataView(buf);
+  let eocd = -1;
+  const floor = Math.max(0, buf.byteLength - 66000);
+  for(let i = buf.byteLength - 22; i >= floor; i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) return null;
+  const count = dv.getUint16(eocd + 10, true);
+  let off = dv.getUint32(eocd + 16, true);
+  const files = {};
+  for(let i = 0; i < count; i++){
+    if(dv.getUint32(off, true) !== 0x02014b50) break;
+    const method = dv.getUint16(off + 10, true);
+    const csize = dv.getUint32(off + 20, true);
+    const nameLen = dv.getUint16(off + 28, true);
+    const extraLen = dv.getUint16(off + 30, true);
+    const cmtLen = dv.getUint16(off + 32, true);
+    const lho = dv.getUint32(off + 42, true);
+    const name = utf8(new Uint8Array(buf, off + 46, nameLen));
+    /* 本地头里的长度才是真正要跳过的，不能用中央目录的 */
+    const lnameLen = dv.getUint16(lho + 26, true);
+    const lextraLen = dv.getUint16(lho + 28, true);
+    const start = lho + 30 + lnameLen + lextraLen;
+    files[name] = { method, csize, start };
+    off += 46 + nameLen + extraLen + cmtLen;
+  }
+  return files;
+}
+/* UTF-8 解码（含 BOM 处理） */
+function utf8(u8){
+  let s = "";
+  const chunk = 8192;
+  for(let i = 0; i < u8.length; i += chunk){
+    s += String.fromCharCode.apply(null, u8.subarray(i, Math.min(i + chunk, u8.length)));
+  }
+  /* 手动处理 UTF-8 多字节，避免依赖 TextDecoder */
+  try{ return decodeURIComponent(escape(s)); }
+  catch(e){
+    /* 非法序列时逐字节兜底 */
+    let out = "";
+    for(let i = 0; i < u8.length; i++){
+      const c = u8[i];
+      if(c < 0x80){ out += String.fromCharCode(c); }
+      else if(c < 0xE0){ out += String.fromCharCode(((c & 0x1F) << 6) | (u8[++i] & 0x3F)); }
+      else if(c < 0xF0){ out += String.fromCharCode(((c & 0x0F) << 12) | ((u8[++i] & 0x3F) << 6) | (u8[++i] & 0x3F)); }
+      else { out += String.fromCharCode(((c & 0x07) << 18) | ((u8[++i] & 0x3F) << 12) | ((u8[++i] & 0x3F) << 6) | (u8[++i] & 0x3F)); }
+    }
+    return out.replace(/^﻿/, "");
+  }
+}
+function unzipText(buf, files, name){
+  const f = files[name];
+  if(!f) return null;
+  const raw = new Uint8Array(buf, f.start, f.csize);
+  if(f.method === 0) return utf8(raw);
+  if(f.method !== 8) throw new Error("不常见的压缩方式");
+  return utf8(inflateRaw(raw));
+}
+
+/* XML 实体还原 + 去标签取文本 */
+function xmlText(s){
+  return String(s)
+    .replace(/<[^>]*>/g, "")
+    .replace(/&lt;/g,"<").replace(/&gt;/g,">")
+    .replace(/&quot;/g,'"').replace(/&apos;/g,"'")
+    .replace(/&amp;/g,"&")
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(+d))
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h,16)));
+}
+/* 列名转索引：AA=26, AB=27 … */
+function colIdx(ref){
+  const m = String(ref||"").match(/^([A-Z]+)/);
+  if(!m) return 0;
+  let n = 0;
+  for(const ch of m[1]) n = n*26 + (ch.charCodeAt(0) - 64);
+  return n - 1;
+}
+
+/* 解析单个工作表的 XML → 二维数组 */
+function parseSheetXml(sheetXml, sst){
+  const rows = [];
+  const rowRe = /<row\b[^>]*>([\s\S]*?)<\/row>/g;
+  let rm;
+  while((rm = rowRe.exec(sheetXml))){
+    const cells = [];
+    const cRe = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+    let cm;
+    while((cm = cRe.exec(rm[1]))){
+      const attrs = cm[1] || "", inner = cm[2] || "";
+      const ref = /r="([A-Z]+\d+)"/.exec(attrs);
+      const t   = /t="([^"]+)"/.exec(attrs);
+      const ci  = ref ? colIdx(ref[1]) : cells.length;
+      let val = "";
+      if(t && t[1] === "inlineStr"){
+        const tre = /<t\b[^>]*>([\s\S]*?)<\/t>/g; let tm;
+        while((tm = tre.exec(inner))) val += xmlText(tm[1]);
+      }else{
+        const vm = /<v\b[^>]*>([\s\S]*?)<\/v>/.exec(inner);
+        const raw = vm ? vm[1] : "";
+        if(t && t[1] === "s"){
+          const idx = parseInt(raw, 10);
+          val = sst[idx] !== undefined ? sst[idx] : "";
+        }else if(t && t[1] === "str"){
+          val = xmlText(raw);
+        }else if(t && t[1] === "b"){
+          val = raw === "1" ? "是" : "否";
+        }else if(t && t[1] === "e"){
+          val = "";   // 错误值（如 #N/A）不当数据
+        }else{
+          val = xmlText(raw);
+          /* Excel 日期是序列号：整数部分=天数，小数部分=时分。
+             微信账单的「交易时间」带时分，转成 "YYYY-MM-DD HH:MM" 再交给通用逻辑 */
+          if(val !== "" && /^\d+(\.\d+)?$/.test(val)){
+            const n = parseFloat(val);
+            if(n > 20000 && n < 60000){
+              const day = Math.floor(n);
+              const dt = new Date(Math.round((day - 25569) * 86400000));
+              if(dt.getUTCFullYear() > 1990){
+                const ds = dt.getUTCFullYear() + "-" + pad(dt.getUTCMonth()+1) + "-" + pad(dt.getUTCDate());
+                const mins = Math.round((n - day) * 1440);
+                val = mins > 0
+                  ? ds + " " + pad(Math.floor(mins/60)) + ":" + pad(mins%60)
+                  : ds;
+              }
+            }
+          }
+        }
+      }
+      cells[ci] = val;
+    }
+    for(let i=0;i<cells.length;i++) if(cells[i] === undefined) cells[i] = "";
+    rows.push(cells);
+  }
+  return rows;
+}
+
+/* xlsx → { sheets: [{name, rows}] }
+   纯 JS 解压，不依赖任何浏览器特有 API */
+async function parseXLSX(buf){
+  const files = unzipStore(buf);
+  if(!files) throw new Error("这不是有效的 xlsx 文件（压缩包结构损坏）");
+
+  /* 共享字符串表：t="s" 的单元格存的是这里的下标（部分生成器用 inlineStr，此时不存在此文件） */
+  const sstXml = unzipText(buf, files, "xl/sharedStrings.xml");
+  const sst = [];
+  if(sstXml){
+    const re = /<si\b[^>]*>([\s\S]*?)<\/si>/g;
+    let m;
+    while((m = re.exec(sstXml))) sst.push(xmlText(m[1]));
+  }
+  /* 遍历所有工作表，按编号排序 */
+  const sheetNames = Object.keys(files)
+    .filter(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k))
+    .sort((a, b) => (+a.match(/\d+/)[0]) - (+b.match(/\d+/)[0]));
+  if(!sheetNames.length) throw new Error("这个 xlsx 里没有找到工作表");
+
+  const sheets = [];
+  for(const sn of sheetNames){
+    const xml = unzipText(buf, files, sn);
+    if(!xml) continue;
+    const rows = parseSheetXml(xml, sst);
+    if(rows.some(r => r.some(c => String(c).trim())))
+      sheets.push({ name: sn.replace(/^xl\/worksheets\//, "").replace(/\.xml$/, ""), rows });
+  }
+  if(!sheets.length) throw new Error("这个 xlsx 里没有可读的数据");
+  return { sheets };
+}
+
+/* ══════════════ 去重 ══════════════
+   两类重复，处理方式不同：
+
+   1) 同一份文件重复导入 → 用文件指纹拦截，根本不入库
+      （这类「重复」必须靠指纹，账户无法区分：同一天同额同商家买两次彩票是真实的）
+
+   2) 不同渠道出现同一笔 → 跨渠道比对：同日 + 同向 + 同额 + 相似商家
+      跨渠道才判重，因为微信/支付宝/银行看同一笔钱是重复的，
+      而同渠道内两笔相似支出几乎必然是两笔真实消费。
+*/
+function fileHash(u8){
+  /* FNV-1a 32 位变体，够短够快；用于识别「同一个文件」 */
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for(let i = 0; i < u8.length; i++){
+    const c = u8[i];
+    h1 = Math.imul(h1 ^ c, 16777619) >>> 0;
+    h2 = Math.imul(h2 + c + i, 2654435761) >>> 0;
+  }
+  return (h1 >>> 0).toString(36) + "-" + (h2 >>> 0).toString(36) + "-" + u8.length;
+}
+/* 对方名模糊相似度 0~1 */
+function normSim(a,b){
+  if(!a || !b) return 0;
+  if(a === b) return 1;
+  if(a.length > 3 && b.length > 3 && (a.indexOf(b) >= 0 || b.indexOf(a) >= 0)) return 0.92;
+  const sa = new Set(a), sb = new Set(b);
+  let hit = 0; sa.forEach(c => { if(sb.has(c)) hit++; });
+  return (2*hit)/(a.length + sb.size);
+}
+function markDuplicates(){
+  DB.txns.forEach(t => t.dup = null);
+  const list = DB.txns.filter(t => !t.src_screens);
+  for(let i=0;i<list.length;i++){
+    const a = list[i];
+    if(a.dup) continue;
+    for(let j=i+1;j<list.length;j++){
+      const b = list[j];
+      if(b.dup) continue;
+      if(a.dir !== b.dir) continue;
+      /* 同渠道不算重复：同一平台内两笔相似的支出多半是两笔真实消费 */
+      if(a.ch === b.ch) continue;
+      if(Math.abs(a.amt - b.amt) > 0.01) continue;
+      if(daysBetween(a.date, b.date) > 1) continue;
+      if(normSim(norm(a.who), norm(b.who)) >= 0.7){
+        b.dup = a.id || ("L"+i);
+        if(!a.id) a.id = "L"+i;
+      }
+    }
+  }
+  DB.txns.forEach((t,i) => { if(!t.id) t.id = "x"+i; });
+}
+
+/* 部分退款的金额后缀说明：京东账单原文写「部分退款的支出金额为剔除退款后的支付金额」，
+   但实测京东的汇总仍会把这笔部分退款扣掉（支出行累加 2388.03 − 0.73 = 声明的 2387.30）。
+   所以金额里带「(已退款X)」时，X 需要从对应消费里扣回来，不能当作已扣过。 */
+function refundSuffixAmt(amtRaw){
+  const m = /[（(]\s*已退款\s*([0-9.]+)/.exec(String(amtRaw == null ? "" : amtRaw));
+  return m ? Math.round(parseFloat(m[1]) * 100) / 100 : 0;
+}
+
+/* ══════════════ 退款配对 ══════════════
+   核心问题：退款必须扣回【它退的那笔消费】，而不是按比例摊到各分类。
+
+   之前用「退款总额 × 各分类占比」摊派，产生的结果是荒谬的：
+   购物显示"退 ¥31,946.69"，可实际退款里只有几笔是买手机的，
+   其余是几个月前的订单退款，对应消费根本不在本月。
+
+   正确做法：
+   1) 每笔退款在【90 天内】按金额和商家名找它的原消费
+   2) 找到 → 从那笔消费的分类里扣掉，净支出 = 原消费 - 退款
+   3) 找不到 → 归为「无对应消费」（可能是去年订单的退款），
+      单独列出，不去冲减任何分类，避免凭空降低某个分类
+   配对要求金额几乎相同（同为整数金额时容差放宽），且时间在消费之后。 */
+function pairRefunds(){
+  const list = DB.txns.filter(t => !t.dup);
+  /* 消费候选：真实支出，非还款 */
+  const spends = list.filter(t => t.dir === "out" && !t.settle);
+  const refunds = list.filter(t => t.dir === "refund");
+  /* 已配对额度：某笔消费还能被退多少（支持部分退款）。
+     用 WeakMap 以【对象引用】为键 —— 早期版本依赖 t.id，
+     但 id 只在 markDuplicates 末尾补齐，手动记账/新建记录可能没有 id，
+     导致 pickPair 里 `if(!c.id) continue` 把它们全跳过。 */
+  const used = new WeakMap();
+  const usedOf = o => used.get(o) || 0;
+  const r2 = n => Math.round(n * 100) / 100;
+  const links = [];
+  /* 按金额分组，避免全表两两比较 */
+  const byAmt = {};
+  spends.forEach(t => {
+    const k = r2(t.amt).toFixed(2);
+    (byAmt[k] = byAmt[k] || []).push(t);
+  });
+  /* ⚠️ 必须「大额优先」处理。
+     同一笔消费可能被多笔退款争抢（比如分两次退），
+     若按数组顺序逐个匹配，小额退款会先抢走大额消费的名额，
+     导致后面的大额退款配不上。实测 12999 的 iPhone 退款就是这么丢的。 */
+  const ordered = refunds.slice().sort((a,b) => b.amt - a.amt);
+  /* ① 先处理「金额带(已退款X)」的内嵌折扣：
+        京东把部分退款写在消费行的金额里（88.97(已退款0.73)），
+        同时另有一条 0.73 的价保退款行 —— 两者是同一件事，绝不能扣两次。
+        以内嵌折扣为准（消费行金额已是扣除后的值，只需从消费侧扣回 X），
+        并把这条消费标记为「已内嵌折扣」，让 ② 跳过它。 */
+  const embedded = new WeakSet();
+  const embeddedKeys = {};        /* "渠道|折扣额" → true */
+  for(const sp of spends){
+    const back = refundSuffixAmt(sp.amtRaw);
+    if(back > 0){
+      embedded.add(sp);
+      embeddedKeys[sp.ch + "|" + back.toFixed(2)] = true;
+      links.push({ refund:null, spend:sp, amt:back, embedded:true });
+    }
+  }
+  /* ② 再处理独立的退款行 */
+  for(const rf of ordered){
+    /* 这笔退款是否已被内嵌折扣覆盖？
+       京东：消费 88.97(已退款0.73) + 独立退款行 0.73 —— 同一件事，不能扣两次。
+       用「渠道+折扣额」做键直接查表，避免 WeakSet 迭代带来的不确定性。 */
+    const dupOfEmbedded = refundSuffixAmt(rf.amtRaw) > 0
+      || !!embeddedKeys[(rf.ch || "") + "|" + r2(rf.amt).toFixed(2)];
+    if(dupOfEmbedded){ links.push({ refund:rf, spend:null, amt:rf.amt, absorbed:true }); continue; }
+    /* 最强信号：退款说明去掉「退款-」前缀后，就是原消费的商品名。
+       「退款-GSO居森皇冠椅儿童成长椅」↔ 消费「GSO居森皇冠椅儿童成长椅」
+       要求「同渠道 + 商品名吻合」，避免跨渠道乱配。
+       跳过已内嵌折扣的消费（金额带"(已退款X)"）——那条已在 ① 里扣过。 */
+    const rn = String(rf.note||"").replace(/^(退款|退货|价保退款|价保退货)-/, "").trim();
+    let target = null;
+    if(rn.length >= 4){
+      const sameCh = spends.filter(t => t.ch === rf.ch
+        && usedOf(t) < t.amt - 0.005 && refundSuffixAmt(t.amtRaw) === 0);
+      target = pickPair(rf, sameCh, used, usedOf, rn);
+    }
+    /* 次选：同渠道 + 金额完全相同 */
+    if(!target){
+      const cand = (byAmt[r2(rf.amt).toFixed(2)] || []).filter(t => t.ch === rf.ch && refundSuffixAmt(t.amtRaw) === 0);
+      target = pickPair(rf, cand, used, usedOf);
+    }
+    /* 再次：同渠道 + 原消费 ≥ 退款（部分退款 / 补差价）。
+       ⚠️ 必须同时有名称佐证，否则任何一笔大额消费都会被「≥退款」捞走。
+       实测案例：GSO 儿童椅买 901.51，只退 13 元（补差价）。 */
+    if(!target && rn.length >= 4){
+      const cand = [];
+      for(const k in byAmt){
+        const a = parseFloat(k);
+        if(a >= rf.amt - 0.01) cand.push.apply(cand, byAmt[k]);
+      }
+      target = pickPair(rf, cand.filter(t => t.ch === rf.ch && refundSuffixAmt(t.amtRaw) === 0), used, usedOf, rn);
+    }
+    /* 不做跨渠道兜底：退款只可能退自己平台的订单，
+       跨平台强行配对只会把不相干的两笔账凑在一起（实测把餐饮退款配到儿童椅上）。 */
+    if(target){
+      used.set(target, r2(usedOf(target) + rf.amt));
+      links.push({ refund:rf, spend:target, amt:Math.min(rf.amt, target.amt) });
+    }else{
+      /* 已被内嵌折扣吸收的退款不算「无对应消费」：
+         消费行金额里已含"(已退款X)"，这笔退款对应的消费就在账本里，
+         只是折扣已内嵌。若再计入 unmatched 会虚增「无对应退款」。 */
+      links.push({ refund:rf, spend:null, amt:rf.amt, absorbed: !!rf._absorbed });
+    }
+  }
+  return links;
+}
+/* 从候选里挑最合适的一笔。
+   nameHint：退款说明里去掉「退款-」前缀得到的原商品名，命中者强优先。 */
+function pickPair(rf, cands, used, usedOf, nameHint){
+  const r2 = n => Math.round(n * 100) / 100;
+  let best = null, bestScore = -Infinity;
+  for(const c of cands){
+    const left = r2(c.amt - usedOf(c));
+    if(left < r2(rf.amt) - 0.01) continue;      /* 已被退完 */
+    /* ⚠️ 必须用带符号的天数：退款一定发生在消费之后。
+       daysBetween 取的是绝对值，用它判断方向会失效，
+       导致「9-22 的退款」被配到「9-26 的消费」这种穿越配对。 */
+    const dd = Math.round((new Date(rf.date) - new Date(c.date)) / 864e5);
+    if(dd <= 0 || dd > 90) continue;             /* 退款必须在消费之后 0~90 天内 */
+    let sc = -dd;                                /* 越近越好 */
+    if(c.ch === rf.ch) sc += 3;                  /* 同渠道更可信 */
+    /* 金额完全相同是最强的辅助信号 —— 退款金额就是原消费金额 */
+    if(Math.abs(r2(c.amt) - r2(rf.amt)) < 0.01) sc += 20;
+    /* 商品名一致：最可靠。要求「退款名去掉前缀后」与消费商品名前缀吻合，
+       避免「13元」「49.95元」这类小额乱撞同金额的其他消费。 */
+    if(nameHint && nameHint.length >= 4){
+      const cn = String(c.note||"").trim();
+      const cw = String(c.who||"").trim();
+      if(cn && (cn === nameHint || cn.indexOf(nameHint) === 0 || nameHint.indexOf(cn) === 0)) sc += 60;
+      else if(cw.length >= 4 && (nameHint.indexOf(cw) === 0 || cw.indexOf(nameHint.slice(0, Math.min(10, nameHint.length))) === 0)) sc += 30;
+    }
+    const sim = normSim(norm(c.who + " " + (c.note||"")), norm((rf.who||"") + " " + (rf.note||"")));
+    sc += sim * 4;
+    if(sc > bestScore){ bestScore = sc; best = c; }
+  }
+  return best;
+}
+
+/* ══════════════ 金额统计口径（唯一入口）══════════════
+   退款是独立方向 dir="refund"，处理原则：
+   - 不计入收入（退款不是挣到的钱，算进收入会让结余虚高）
+   - 从支出中扣除（买手机 5999 全额退回，这个月实际没花这笔钱，
+     显示 5999 会让月度支出虚高）
+   - 不参与分类占比与预算（退款不是消费）
+   所以：净支出 = 支出 - 退款；净结余 = 收入 - 净支出。 */
+function sumMoney(list, ym){
+  let gross = 0, inc = 0, refund = 0, settle = 0;
+  for(const t of list){
+    if(t.dup) continue;
+    if(t.dir === "refund") refund += t.amt;
+    else if(t.dir === "in") inc += t.amt;
+    else if(t.settle) settle += t.amt;
+    else if(t.dir === "out") gross += t.amt;
+  }
+  /* 规整到分：逐笔累加会产生 2387.300000000001 这类值，
+     不处理会直接显示给用户，也会让金额对不上账单 */
+  const r2 = n => Math.round(n * 100) / 100;
+  /* ⚠️ 退款只抵扣【本月确实存在的那笔消费】，不按比例摊派。
+     跨月/跨年订单的退款（找不到对应消费）不冲减本月支出，
+     否则会出现「购物退 3 万」这种明显错误的数字。 */
+  let matched = 0;
+  for(const l of pairRefunds()){
+    if(!l.spend) continue;
+    /* 配对的消费必须在本月，才从本月支出里扣 */
+    if(ym && l.spend.date.slice(0,7) !== ym) continue;
+    matched += l.amt;
+  }
+  matched = r2(Math.min(matched, gross));
+  /* 「无对应消费」= 有退款记录、但找不到它退的那笔消费。
+     不能用 refund - matched 反推：内嵌折扣（金额带"(已退款X)"）
+     没有独立的退款行，它只从消费侧扣，不参与这个减法，
+     否则 unmatched 会算出负数。 */
+  let unmatched = 0;
+  for(const l of pairRefunds()){
+    if(l.spend || !l.refund || l.absorbed) continue;
+    if(ym && l.refund.date.slice(0,7) !== ym) continue;
+    unmatched += l.amt;
+  }
+  unmatched = r2(unmatched);
+  const out = r2(Math.max(0, gross - matched));
+  return { out, gross:r2(gross), inc:r2(inc), refund:r2(refund),
+           matched, unmatched,
+           settle:r2(settle), net:r2(inc - out) };
+}
+/* 分类占比：按配对结果算出每个分类的【净支出】
+   - gross：该分类原始消费
+   - back ：退回到该分类的退款（只算配对成功的）
+   - net  ：gross - back，才是真正花掉的钱 */
+function spendByCat(ym){
+  const gross = {}, back = {};
+  const r2 = n => Math.round(n * 100) / 100;
+  DB.txns.filter(t => !t.dup && t.dir === "out" && !t.settle && t.date.slice(0,7) === ym)
+    .forEach(t => { const k = t.cat || "其他"; gross[k] = r2((gross[k]||0) + t.amt); });
+  for(const l of pairRefunds()){
+    if(!l.spend) continue;                       /* 无对应消费 → 不摊到任何分类 */
+    if(l.spend.date.slice(0,7) !== ym) continue; /* 消费不在本月 → 本月分类不动 */
+    const k = l.spend.cat || "其他";
+    back[k] = r2((back[k]||0) + Math.min(l.amt, l.spend.amt));
+  }
+  const net = {};
+  for(const k in gross) net[k] = r2(Math.max(0, gross[k] - (back[k]||0)));
+  return { gross, back, net };
+}
+function inMonth(ym){ return DB.txns.filter(t => !t.dup && t.date.slice(0,7) === ym); }
+function inRange(ym){ return inMonth(ym); }
+/* ══════════════ 视图状态 ══════════════ */
+const V = { tab:"home", ym:"", day:null, range:"month", refYm:null };
+
+/* ══════════════ App ══════════════ */
+const App = {
+
+  /* —— 导航 —— */
+  go(tab){
+    V.tab = tab;
+    ["home","import","stat","me"].forEach(t => {
+      document.getElementById("v-"+t).classList.toggle("hide", t !== tab);
+    });
+    document.querySelectorAll("nav button").forEach(b => b.classList.toggle("on", b.dataset.v === tab));
+    document.getElementById("ttl").textContent = {home:"账本",import:"导入账单",stat:"统计",me:"我的"}[tab];
+    window.scrollTo(0,0);
+    this.render();
+  },
+
+  toast(msg){
+    const t = document.getElementById("toast");
+    t.textContent = msg; t.classList.add("on");
+    clearTimeout(t._t); t._t = setTimeout(() => t.classList.remove("on"), 2200);
+  },
+
+  sheet(html){
+    document.getElementById("sheetBody").innerHTML = html;
+    document.getElementById("mask").classList.add("on");
+    document.getElementById("sheet").classList.add("on");
+  },
+  close(){
+    document.getElementById("mask").classList.remove("on");
+    document.getElementById("sheet").classList.remove("on");
+  },
+
+  /* —— 渲染总入口 —— */
+  render(){
+    if(!V.ym) V.ym = this.pickMonth();
+    this.renderHome(); this.renderStat(); this.renderMe();
+    document.getElementById("hsub").textContent =
+      DB.txns.filter(t => !t.dup).length + " 笔记录";
+  },
+
+  /* 决定首页显示哪个月：
+     优先「记录最多的那个月」，而不是日历当月。
+     否则导入完 9 月的账单却停在只有 2 笔的 10 月，看过去像什么都没导入 */
+  pickMonth(){
+    const live = DB.txns.filter(t => !t.dup);
+    if(!live.length) return today().slice(0,7);
+    const tally = {};
+    live.forEach(t => { const m = t.date.slice(0,7); tally[m] = (tally[m]||0) + 1; });
+    const months = Object.keys(tally).sort((a,b) => tally[b] - tally[a]);
+    const best = months[0];
+    /* 数据集中在单月时优先显示该月；分散在多月时显示当月 */
+    if(months.length === 1) return best;
+    const cur = today().slice(0,7);
+    if(tally[cur] === tally[best]) return cur;
+    return tally[best] >= tally[cur] ? best : cur;
+  },
+
+  /* —— 首页 —— */
+  renderHome(){
+    const ym = V.ym;
+    const m = sumMoney(inMonth(ym), ym);
+    document.getElementById("hk").textContent = ym.replace("-"," 年 ") + " 月支出";
+    document.getElementById("hv").textContent = money(m.out);
+    document.getElementById("hi").textContent = money(m.inc);
+    const net = m.net;
+    const hn = document.getElementById("hn");
+    hn.textContent = (net>=0?"+":"") + money(net);
+    hn.style.color = net >= 0 ? "#b9f5d4" : "#ffd4d1";
+    document.getElementById("hc").textContent = inMonth(ym).length;
+    /* 有退款时明确显示，避免用户以为算错了 */
+    const rf = document.getElementById("hrefund");
+    if(m.refund > 0){
+      rf.style.display = "block";
+      rf.innerHTML = `↩️ 本月退款 <b>${money(m.refund)}</b>　已从支出中扣除，不计入收入`;
+    }else{
+      rf.style.display = "none";
+    }
+    this.renderCal();
+    this.renderDay();
+    this.renderCats(ym);
+  },
+
+  renderCal(){
+    const [Y,M] = V.ym.split("-").map(Number);
+    const first = new Date(Y,M-1,1);
+    const off = (first.getDay()+6)%7;
+    const start = new Date(Y,M-1,1-off);
+    const agg = {};
+    DB.txns.filter(t => !t.dup).forEach(t => {
+      const d = agg[t.date] || (agg[t.date] = {i:0,o:0,n:0,rep:0,ref:0});
+      if(t.dir === "refund") d.ref += t.amt;              /* 退款单独记，不并入收支 */
+      else if(t.dir === "in") d.i += t.amt;
+      else if(t.settle) d.rep += t.amt;                  /* 还款单独放，不并入当日消费 */
+      else d.o += t.amt;
+      d.n++;
+    });
+    const html = [];
+    const td = today();
+    for(let i=0;i<42;i++){
+      const d = new Date(start.getTime() + i*864e5);
+      const ds = ymd(d);
+      const inM = d.getMonth()+1 === M;
+      const a = agg[ds];
+      let cls = "cell";
+      if(!inM) cls += " hide";
+      else {
+        if(a) cls += a.i > a.o ? " in" : " out";
+        if(ds === td) cls += " today";
+        if(ds === V.day) cls += " sel";
+      }
+      html.push(`<div class="${cls}" data-d="${ds}">${d.getDate()}` +
+        (a && inM ? `<span class="sm">${a.i>a.o?"+"+Math.round(a.i):(a.o?Math.round(a.o):"")}</span>` : "") +
+        (a && inM && a.rep ? `<span class="rp">💳</span>` : "") +
+        (a && inM && a.ref ? `<span class="rf">↩</span>` : "") +
+        `</div>`);
+    }
+    const el = document.getElementById("cal");
+    el.innerHTML = html.join("");
+    el.querySelectorAll(".cell[data-d]").forEach(c => {
+      c.onclick = () => {
+        if(c.classList.contains("hide")) return;
+        V.day = (V.day === c.dataset.d) ? null : c.dataset.d;
+        this.renderCal(); this.renderDay();
+      };
+    });
+    document.getElementById("calTitle").textContent = Y + " 年 " + M + " 月";
+    /* 列出所有有数据的月份，一键跳转 */
+    const nav = document.getElementById("monthNav");
+    const tally = {};
+    DB.txns.filter(t => !t.dup).forEach(t => {
+      const m = t.date.slice(0,7);
+      tally[m] = (tally[m]||0) + 1;
+    });
+    const ms = Object.keys(tally).sort().reverse();
+    nav.innerHTML = ms.length > 1
+      ? `<div style="margin-top:12px;padding-top:11px;border-top:1px solid #f1f4f8">
+          <div class="muted" style="margin-bottom:7px">有数据的月份（点切换）</div>
+          <div class="chips">${ms.map(m => {
+            const on = m === V.ym;
+            const [yy, mm] = m.split("-");
+            const mm2 = sumMoney(inMonth(m), m);
+            const rf = mm2.refund;
+            return `<button class="chip ${on ? "on" : ""}" onclick="App.jumpMonth('${m}')">
+              ${mm} 月 · ${tally[m]} 笔${mm2.out ? " · " + money(mm2.out) : ""}${rf ? " · 退" + money(rf) : ""}
+            </button>`;
+          }).join("")}</div>
+        </div>`
+      : "";
+  },
+
+  jumpMonth(m){
+    V.ym = m; V.day = null;
+    this.renderHome();
+    window.scrollTo({ top:0, behavior:"smooth" });
+  },
+
+  renderDay(){
+    const ds = V.day;
+    document.getElementById("dayTitle").textContent = ds ? ds + " 明细" : "当日明细（点日历选一天）";
+    const sum = document.getElementById("daySum");
+    if(!ds){
+      sum.textContent = "";
+      document.getElementById("dayList").innerHTML =
+        `<div class="empty"><span class="big">👆</span>点日历上的某一天<br>查看当天每一笔明细</div>`;
+      return;
+    }
+    const rows = DB.txns.filter(t => t.date === ds && !t.dup).sort((a,b) => b.amt - a.amt);
+    if(!rows.length){
+      sum.textContent = "";
+      document.getElementById("dayList").innerHTML = `<div class="empty"><span class="big">🍃</span>这天没有记录</div>`;
+      return;
+    }
+    const m = sumMoney(rows);
+    sum.innerHTML = `支 ${money(m.out)} · 收 ${money(m.inc)}` +
+      (m.refund ? ` · <span class="tag b">退款 ${money(m.refund)}</span>` : "") +
+      (m.settle ? ` · <span class="tag b">还款 ${money(m.settle)}</span>` : "");
+    document.getElementById("dayList").innerHTML = rows.map((r,idx) => this.rowHTML(r, idx)).join("");
+    this.bindRows("dayList");
+  },
+
+  rowHTML(r, idx){
+    const cat = r.cat || "其他";
+    const ic = CATS[cat] || "📦";
+    const isIn = r.dir === "in";
+    const isRef = r.dir === "refund";
+    const cls = isIn ? "in" : (r.settle || isRef ? "" : "out");
+    const tags = [];
+    tags.push(`<span class="tag ${r.catAuto && !r.settle && !isRef ? "" : "b"}">${esc(cat)}</span>`);
+    if(r.src) tags.push(`<span class="tag">${esc(r.src)}</span>`);
+    if(isRef) tags.push(`<span class="tag b">已从支出扣除</span>`);
+    if(r.settle) tags.push(`<span class="tag b">不计入消费</span>`);
+    if(r.dup) tags.push(`<span class="tag w">疑似重复</span>`);
+    /* 退款是钱回来，视觉上按正向显示 */
+    const sign = (isIn || isRef) ? "+" : "-";
+    return `<div class="row" data-i="${idx}">
+      <div class="ic" style="background:#f2f5fa">${ic}</div>
+      <div class="mid">
+        <div class="t1">${esc(r.who || "未标注")}</div>
+        <div class="t2">${tags.join("")}</div>
+      </div>
+      <div class="amt ${cls}">${sign}${money(r.amt).slice(1)}</div>
+    </div>`;
+  },
+
+  bindRows(container){
+    const rows = [...document.querySelectorAll("#"+container+" .row")];
+    rows.forEach(el => {
+      let s = null;
+      el.addEventListener("touchstart", () => s = Date.now(), {passive:true});
+      el.addEventListener("touchend", () => {
+        if(s && Date.now()-s < 260) this.editSheet(rows.indexOf(el));
+        s = null;
+      });
+      el.addEventListener("click", e => {
+        if(window.matchMedia("(hover:hover)").matches) this.editSheet(rows.indexOf(el));
+      });
+    });
+  },
+
+  renderCats(ym){
+    /* 分类净支出：退款按配对结果扣回它所属的那笔消费，不再按比例摊派 */
+    const C = spendByCat(ym);
+    const m = sumMoney(inMonth(ym), ym);
+    const ks = Object.keys(C.net).sort((a,b) => C.net[b] - C.net[a]);
+    const tot = ks.reduce((s,k) => s + C.net[k], 0);
+    const notes = [];
+    if(m.matched) notes.push(`已扣退款 ${money(m.matched)}`);
+    if(m.unmatched) notes.push(`另有 ${money(m.unmatched)} 为往期订单退款，未冲减本月`);
+    if(m.settle) notes.push(`还款 ${money(m.settle)} 不计入`);
+    document.getElementById("catSum").innerHTML = ks.length
+      ? ("共 " + money(tot) + (notes.length ? ` · <span class="tag">${notes.join(" · ")}</span>` : ""))
+      : "";
+    const r2 = n => Math.round(n * 100) / 100;
+    document.getElementById("catBars").innerHTML = ks.length ? ks.map(c => {
+      const pct = tot ? C.net[c]/tot*100 : 0;
+      const bud = DB.budgets[c] || 0;
+      const over = bud > 0 && C.net[c] > bud;
+      const bk = r2(C.back[c] || 0);
+      /* 只在确实退过这个分类时才显示，退多少完全来自配对结果 */
+      const back = bk > 0.005 ? ` <span class="tag g">已退 ${money(bk)}</span>` : "";
+      return `<div style="margin-bottom:12px">
+        <div class="dl" style="border:0;padding:0">
+          <span>${CATS[c]||"📦"} ${esc(c)}${bud>0?` <span class="tag ${over?'w':''}">预算 ${money(bud)}</span>`:""}${back}</span>
+          <span class="v">${money(C.net[c])} <span class="muted" style="font-weight:400">${pct.toFixed(0)}%</span></span>
+        </div>
+        <div class="bar"><i class="${over?'over':'ok'}" style="width:${Math.min(100,pct)}%"></i></div>
+      </div>`;
+    }).join("") : `<div class="empty"><span class="big">📭</span>本月还没有支出记录<br>去「导入」上传微信/支付宝账单</div>`;
+  },
+
+  setMonth(i){
+    if(i === 0){ V.ym = this.pickMonth(); V.day = null; this.renderHome(); return; }
+    const [Y,M] = V.ym.split("-").map(Number);
+    const d = new Date(Y, M-1+i, 1);
+    V.ym = d.getFullYear()+"-"+pad(d.getMonth()+1);
+    V.day = null;
+    this.renderHome();
+  },
+
+  /* —— 单条编辑 —— */
+  editSheet(idx){
+    const rows = V.day
+      ? DB.txns.filter(t => t.date === V.day && !t.dup).sort((a,b) => b.amt-a.amt)
+      : DB.txns.filter(t => t.date.slice(0,7) === V.ym && !t.dup);
+    const r = rows[idx];
+    if(!r) return;
+    const chips = Object.keys(CATS).map(c =>
+      `<button class="chip ${r.cat===c?'on':''}" data-c="${c}">${CATS[c]} ${c}</button>`).join("");
+    const dirName = r.dir === "in" ? "收入" : r.dir === "refund" ? "退款"
+      : r.settle ? "还款" : "支出";
+    this.sheet(`
+      <h3>修改这一笔</h3>
+      <div class="note" style="margin-bottom:13px">
+        ${esc(r.date)} · ${dirName} ${money(r.amt)}<br>
+        对方：${esc(r.who||"—")}　来源：${esc(r.src||"手动")}
+        ${r.dup?`<br><span style="color:var(--warn)">⚠ 与另一笔高度相似，已标记疑似重复</span>`:""}
+      </div>
+      <div class="field">
+        <label>类型</label>
+        <div class="seg" id="edDir">
+          <button data-v="out"    class="${r.dir==="out"?"on":""}">支出</button>
+          <button data-v="in"     class="${r.dir==="in"?"on":""}">收入</button>
+          <button data-v="refund" class="${r.dir==="refund"?"on":""}">退款</button>
+        </div>
+      </div>
+      <div class="field"><label>分类</label><div class="chips" id="edChips">${chips}</div></div>
+      <div class="field"><label>对方 / 商家</label><input id="edWho" value="${esc(r.who||"")}"></div>
+      <div class="two">
+        <div class="field"><label>金额</label><input type="number" step="0.01" inputmode="decimal" id="edAmt" value="${r.amt}"></div>
+        <div class="field"><label>日期</label><input type="date" id="edDate" value="${r.date}"></div>
+      </div>
+      <button class="btn" id="edSave">保存</button>
+      <div class="btnrow">
+        ${r.dup?`<button class="btn sm line" style="flex:1" id="edUndup">取消重复标记</button>`:""}
+        <button class="btn sm danger" style="flex:1" id="edDel">删除这一笔</button>
+      </div>
+    `);
+    let cat = r.cat, dir = r.dir;
+    document.querySelectorAll("#edDir button").forEach(b => b.onclick = () => {
+      dir = b.dataset.v;
+      document.querySelectorAll("#edDir button").forEach(x => x.classList.toggle("on", x === b));
+    });
+    document.querySelectorAll("#edChips .chip").forEach(b => b.onclick = () => {
+      cat = b.dataset.c;
+      document.querySelectorAll("#edChips .chip").forEach(x => x.classList.toggle("on", x === b));
+    });
+    document.getElementById("edSave").onclick = () => {
+      r.cat = cat; r.catAuto = false;
+      r.who = document.getElementById("edWho").value.trim();
+      r.amt = parseAmt(document.getElementById("edAmt").value) || r.amt;
+      r.date = document.getElementById("edDate").value || r.date;
+      /* 改方向时同步 refund 标记，否则统计口径会不一致 */
+      r.dir = dir;
+      r.refund = dir === "refund" ? 1 : 0;
+      if(dir === "refund"){ r.settle = 0; r.cat = "退款"; }
+      save(); this.close(); this.render();
+      this.toast("已保存");
+    };
+    const un = document.getElementById("edUndup");
+    if(un) un.onclick = () => { r.dup = null; save(); this.close(); this.render(); this.toast("已取消重复标记"); };
+    document.getElementById("edDel").onclick = () => {
+      if(!confirm("删除这笔记录？")) return;
+      DB.txns = DB.txns.filter(x => x !== r);
+      save(); this.close(); this.render(); this.toast("已删除");
+    };
+  },
+
+  /* —— 导入 —— */
+  pick(){ document.getElementById("fileIn").click(); },
+
+  async onFiles(files){
+    if(!files || !files.length) return;
+    const res = document.getElementById("impRes");
+    let html = "", totalAdded = 0, skipped = 0;
+    for(const f of files){
+      try{
+        /* ── 第一道关：文件指纹。同一个文件不重复导入 ──
+           这比按内容判重可靠：同一天同额同商家的两笔消费是完全正常的，
+           只有「整个文件重复」才是真正的重复导入。 */
+        const h = fileHash(new Uint8Array(await toArrayBuffer(f)));
+        const prev = DB.imports.find(x => x.hash === h);
+        if(prev){
+          skipped++;
+          html += `<div class="note" style="margin:11px 0 0;background:#fdf9f2;border-color:#ecd9b8">
+            ⚠️ <b>${esc(f.name)}</b> 已导入过<br>
+            ${prev.at.slice(0,16).replace("T"," ")} 导入的同一个文件，共 ${prev.added} 笔，
+            已自动跳过，避免重复计算。<br>
+            <span class="muted">如果确实要再导一次（比如上次导到一半被打断），
+            请到「我的 → 导入历史」里先撤销那次导入。</span>
+          </div>`;
+          continue;
+        }
+        const r = await parseFile(f, f.name);
+        const stamp = new Date().toISOString();
+        const seq = DB.imports.length ? (DB.imports[0].seq || 0) + 1 : 1;
+        r.rows.forEach(t => { t.srcAt = stamp; t.importSeq = seq; });
+        const before = DB.txns.length;
+        DB.txns.push(...r.rows);
+        markDuplicates();
+        const added = DB.txns.length - before;
+        const rep = r.rows.filter(t => t.settle).length;
+        totalAdded += added;
+        DB.imports.unshift({
+          name:f.name, hash:h, plat:r.plat, nm:r.nm, at:stamp, seq,
+          n:r.rows.length, added, skip:r.skip.length, head:r.headLine
+        });
+        save();
+        html += `<div class="note" style="margin:11px 0 0;background:#f2fbf6;border-color:#bfe8d1">
+          ✅ <b>${esc(f.name)}</b><br>
+          识别为 <b>${esc(r.nm)}账单</b>（${r.fmt==="xlsx"?"Excel":"CSV"} · 表头在第 ${r.head} 行${r.plat==="generic"?"，按通用格式解析":""}）<br>
+          读入 ${r.rows.length} 笔，跳过无效行 ${r.skip.length} 条，新增 ${added} 笔
+          ${rep ? `<br><span style="color:var(--brand)">其中 ${rep} 笔为<b>还款</b>，已单独标记，不计入本月消费与预算</span>` : ""}
+        </div>`;
+      }catch(e){
+        html += `<div class="note" style="margin:11px 0 0;background:#fdf3f3;border-color:#f0c9c9">
+          ❌ <b>${esc(f.name)}</b><br>${esc(e.message)}
+        </div>`;
+      }
+    }
+    res.innerHTML = html + (html
+      ? `<button class="btn" style="margin-top:13px" onclick="App.goHomeToData()">查看 ${esc(App.pickMonth().replace("-"," 年 "))} 月明细 ›</button>`
+      : "");
+    this.renderHist();
+    if(html && totalAdded > 0){
+      /* 跳到数据所在月份，避免停在空月份让人以为没导入成功 */
+      this.goHomeToData();
+      this.toast(`已导入 ${totalAdded} 笔，已跳到有数据的月份`);
+    }else{
+      this.render();
+      if(html) this.toast("导入完成");
+    }
+  },
+
+  /* 回到首页并定位到数据最多的月份 */
+  goHomeToData(){
+    V.ym = this.pickMonth();
+    V.day = null;
+    this.go("home");
+  },
+
+  renderHist(){
+    const el = document.getElementById("hist");
+    if(!DB.imports.length){ el.innerHTML = `<div class="empty">还没有导入记录</div>`; return; }
+    el.innerHTML = DB.imports.map((h, idx) => {
+      const when = String(h.at || "").slice(0,16).replace("T"," ");
+      const plat = h.plat === "wechat" ? "微信" : h.plat === "alipay" ? "支付宝"
+                 : h.plat === "generic" ? (h.nm || "通用") : (h.nm || "其他");
+      return `<div class="dl">
+        <span>${esc(h.name)}<br>
+          <span class="muted">${when} · ${esc(plat)} · 新增 ${h.added} 笔</span></span>
+        <span style="display:flex;gap:6px;align-items:center">
+          <span class="v">${h.added}</span>
+          <button class="btn sm line" data-u="${idx}" style="padding:5px 10px;font-size:12px">撤销</button>
+        </span>
+      </div>`;
+    }).join("");
+    el.querySelectorAll("[data-u]").forEach(b => b.onclick = () => this.undoImport(+b.dataset.u));
+  },
+
+  /* 撤销一次导入：删掉那批记录，用途是「导错了/导到一半被打断」 */
+  undoImport(idx){
+    const h = DB.imports[idx];
+    if(!h) return;
+    if(!confirm(`撤销这次导入？\n\n${h.name}\n${String(h.at||"").slice(0,16).replace("T"," ")} · ${h.added} 笔\n\n该文件的记录会全部删除，可以重新导入。`)) return;
+    const stamp = String(h.at || "");
+    const before = DB.txns.length;
+    /* 按导入时间窗口剔除该批次。记录带 srcAt 更好，这里用导入历史顺序兜底 */
+    DB.txns = DB.txns.filter(t => t.srcAt !== stamp);
+    let removed = before - DB.txns.length;
+    if(!removed){
+      /* 老数据没有 srcAt：按时间窗口删（该次导入到下一条导入之前） */
+      const older = DB.imports[idx+1];
+      const lo = older ? String(older.at) : "";
+      DB.txns = DB.txns.filter(t => !(t.srcAt === stamp ||
+        (!t.srcAt && (!lo || t.importSeq > (older.seq || 0)))));
+      removed = before - DB.txns.length;
+    }
+    DB.imports.splice(idx, 1);
+    markDuplicates(); save();
+    this.renderHist(); this.render();
+    this.goHomeToData();
+    this.toast(`已撤销，删除 ${removed} 笔`);
+  },
+
+  /* —— 手动录入 —— */
+  mDir(v){
+    document.querySelectorAll("#mDir button").forEach(b => b.classList.toggle("on", b.dataset.v === v));
+    const hint = document.getElementById("mDirHint");
+    if(hint){
+      hint.textContent = v === "refund" ? "退款：会从本月支出里扣掉，不计入收入"
+        : v === "in" ? "收入：工资、转入等进账"
+        : "退款会从支出里扣掉，不计入收入";
+    }
+  },
+  renderChips(){
+    document.getElementById("mChips").innerHTML = Object.keys(CATS).map(c =>
+      `<button class="chip" data-c="${c}" onclick="this.classList.toggle('on')">${CATS[c]} ${c}</button>`).join("");
+    const d = document.getElementById("mDate");
+    if(!d.value) d.value = today();
+    const sel = document.getElementById("mCh");
+    if(sel && !sel.options.length){
+      sel.innerHTML = CH_SEL.map(c => `<option value="${c.code}">${c.nm}</option>`).join("");
+      const guess = guessCh();
+      if(guess) sel.value = guess;
+    }
+  },
+
+  addManual(){
+    const amt = parseAmt(document.getElementById("mAmt").value);
+    if(!amt){ this.toast("请填写金额"); return; }
+    const dir = document.querySelector("#mDir button.on").dataset.v;
+    const who = document.getElementById("mWho").value.trim();
+    const note = document.getElementById("mNote").value.trim();
+    const sel = document.querySelector("#mChips .chip.on");
+    const date = document.getElementById("mDate").value || today();
+    const chSel = document.getElementById("mCh");
+    const chCode = chSel ? chSel.value : "other";
+    const chName = (CH_SEL.find(c => c.code === chCode) || {nm:"其他"}).nm;
+    if(!date){ this.toast("请选择日期"); return; }
+    const cat = sel ? sel.dataset.c
+      : dir === "refund" ? "退款"
+      : (dir === "in" ? "收入" : classify(who, note));
+    DB.txns.push({
+      date, dir, amt, who: who || (note || "手动记录"), note, cat, ch:chCode,
+      catAuto: !sel, dup:null, settle:0, refund: dir === "refund" ? 1 : 0,
+      src:"手动·" + chName, srcAt:"manual", importSeq:-1
+    });
+    markDuplicates();
+    V.ym = date.slice(0,7); V.day = date;
+    save();
+    ["mAmt","mWho","mNote"].forEach(id => document.getElementById(id).value = "");
+    document.querySelectorAll("#mChips .chip").forEach(c => c.classList.remove("on"));
+    this.render();
+    this.toast("已记一笔：" + money(amt));
+  },
+
+  /* —— 统计 —— */
+  setRange(r){ V.range = r; this.renderStat(); },
+
+  renderStat(){
+    const now = new Date();
+    let ym, label, days = 30;
+    if(V.range === "month"){ ym = today().slice(0,7); label = "本月支出"; }
+    else if(V.range === "last"){
+      const d = new Date(now.getFullYear(), now.getMonth()-1, 1);
+      ym = d.getFullYear()+"-"+pad(d.getMonth()+1); label = "上月支出";
+    } else { ym = String(now.getFullYear()); label = "本年支出"; days = now.getMonth()+1; }
+    const list = inRange(ym);
+    const m = sumMoney(list, ym);
+    const out = m.out, inc = m.inc;
+    document.getElementById("sk").textContent = label;
+    document.getElementById("sv").textContent = money(out);
+    document.getElementById("si").textContent = money(inc);
+    document.getElementById("sn").textContent = money(m.net);
+    document.getElementById("sd").textContent = money(days ? out/days : 0);
+    const sref = document.getElementById("sref");
+    const notes = [];
+    if(m.matched) notes.push(`已扣退款 ${money(m.matched)}`);
+    if(m.unmatched) notes.push(`往期订单退款 ${money(m.unmatched)}`);
+    if(m.settle) notes.push(`还款 ${money(m.settle)}`);
+    sref.innerHTML = notes.length ? notes.join(" · ") + "（均不计入收入）" : "";
+    sref.style.display = notes.length ? "block" : "none";
+
+    /* 分类同样按配对结果算净支出 */
+    const C = spendByCat(ym);
+    const ks = Object.keys(C.net).sort((a,b) => C.net[b] - C.net[a]);
+    const tot = ks.reduce((s,k) => s + C.net[k], 0);
+    document.getElementById("srSum").innerHTML = tot
+      ? ("共 " + money(tot) + (notes.length ? ` · <span class="tag">${notes.join(" · ")}</span>` : "")) : "";
+    const r2s = n => Math.round(n * 100) / 100;
+    document.getElementById("stCats").innerHTML = ks.length ? ks.map(k => {
+      const pct = tot ? C.net[k]/tot*100 : 0;
+      const bk = r2s(C.back[k] || 0);
+      return `<div style="margin-bottom:12px">
+        <div class="dl" style="border:0;padding:0">
+          <span>${CATS[k]||"📦"} ${esc(k)}${bk>0.005?` <span class="tag g">已退 ${money(bk)}</span>`:""}</span>
+          <span class="v">${money(C.net[k])} <span class="muted" style="font-weight:400">${pct.toFixed(0)}%</span></span>
+        </div>
+        <div class="bar"><i style="width:${Math.min(100,pct)}%"></i></div>
+      </div>`;
+    }).join("") : `<div class="empty">该区间没有支出</div>`;
+
+    const ch = {};
+    list.filter(t => t.dir === "out" && !t.settle).forEach(t => { const k = t.src || "其他"; ch[k] = (ch[k]||0) + t.amt; });
+    const ck = Object.keys(ch).sort((a,b) => ch[b]-ch[a]);
+    document.getElementById("stCh").innerHTML = ck.length ? ck.map(k =>
+      `<div class="dl"><span>${esc(k)}</span><span class="v">${money(ch[k])}</span></div>`).join("")
+      : `<div class="empty">暂无数据</div>`;
+
+    const bs = Object.keys(DB.budgets).filter(k => DB.budgets[k] > 0);
+    document.getElementById("stBud").innerHTML = bs.length ? bs.map(k => {
+      const sp = cat[k]||0, bud = DB.budgets[k], pct = Math.min(100, sp/bud*100), over = sp > bud;
+      return `<div style="margin-bottom:13px">
+        <div class="dl" style="border:0;padding:0">
+          <span>${CATS[k]||"📦"} ${esc(k)}${over?' <span class="tag w">超支</span>':''}</span>
+          <span class="v" style="color:${over?'var(--out)':'inherit'}">${money(sp)} / ${money(bud)}</span>
+        </div>
+        <div class="bar"><i class="${over?'over':'ok'}" style="width:${pct}%"></i></div>
+      </div>`;
+    }).join("") : `<div class="empty">还没设预算<br>去「我的」按分类设一个月度上限</div>`;
+  },
+
+  /* —— 我的 —— */
+  renderMe(){
+    const live = DB.txns.filter(t => !t.dup);
+    document.getElementById("mc").textContent = live.length;
+    document.getElementById("md").textContent = DB.txns.filter(t => t.dup).length;
+    document.getElementById("mf").textContent = DB.imports.length;
+    const rf = document.getElementById("mrf");
+    if(rf){
+      const n = live.filter(t => t.dir === "refund").length;
+      const a = live.filter(t => t.dir === "refund").reduce((s,t) => s+t.amt, 0);
+      rf.textContent = n ? n + " 笔 / " + money(a) : "0 笔";
+    }
+    const auto = live.filter(t => t.catAuto && t.cat !== "其他" && !t.settle && t.dir !== "refund").length;
+    const outs = live.filter(t => t.dir === "out" && !t.settle);
+    document.getElementById("mk").textContent = outs.length
+      ? Math.round(auto/outs.length*100) + "%" : "—";
+    document.getElementById("budList").innerHTML = Object.keys(CATS)
+      .filter(c => c !== "退款")     /* 退款不是消费，不设预算 */
+      .map(c =>
+      `<div class="dl"><span>${CATS[c]} ${c}</span>
+        <input type="number" inputmode="decimal" placeholder="不限" data-b="${c}"
+          value="${DB.budgets[c] ? DB.budgets[c] : ""}"
+          style="width:104px;text-align:right;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:#fbfcfe">
+      </div>`).join("");
+  },
+
+  saveBudgets(){
+    document.querySelectorAll("[data-b]").forEach(i => {
+      const v = parseFloat(i.value);
+      if(v > 0) DB.budgets[i.dataset.b] = v; else delete DB.budgets[i.dataset.b];
+    });
+    save(); this.render(); this.toast("预算已保存");
+  },
+
+  /* —— 备份 —— */
+  exportData(){
+    const blob = new Blob([JSON.stringify(DB, null, 1)], {type:"application/json"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "账本备份_" + today() + ".json";
+    a.click();
+    this.toast("已导出，请存到微信收藏或网盘");
+  },
+
+  exportCSV(){
+    const head = ["日期","收/支","金额","对方","备注","分类","渠道"];
+    const lines = [head.join(",")];
+    DB.txns.filter(t => !t.dup).sort((a,b) => a.date.localeCompare(b.date)).forEach(t => {
+      lines.push([t.date, t.dir==="in"?"收入":"支出", t.amt,
+        '"' + String(t.who||"").replace(/"/g,'""') + '"',
+        '"' + String(t.note||"").replace(/"/g,'""') + '"',
+        t.cat||"", t.src||""].join(","));
+    });
+    const blob = new Blob(["﻿" + lines.join("\r\n")], {type:"text/csv"});
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "账本明细_" + today() + ".csv";
+    a.click();
+    this.toast("已导出 CSV");
+  },
+
+  importData(){ document.getElementById("bkIn").click(); },
+
+  onBackup(f){
+    if(!f) return;
+    const fr = new FileReader();
+    fr.onload = () => {
+      if(f.name.match(/\.csv$/i)){
+        try{
+          const rows = splitCSV(decode(fr.result)).filter(r => r.some(c => String(c).trim()));
+          const h = rows.findIndex(r => r.map(c=>String(c).replace(/\s/g,"")).indexOf("日期") >= 0);
+          if(h < 0) throw new Error("CSV 里没有「日期」列，请用本工具导出的 CSV");
+          let n = 0;
+          for(let i=h+1;i<rows.length;i++){
+            const r = rows[i];
+            const d = parseDate(r[0]), amt = parseAmt(r[2]);
+            if(!d || !amt) continue;
+            DB.txns.push({ date:d, dir:/收入/.test(r[1])?"in":"out", amt,
+              who:r[3]||"", note:r[4]||"", cat:r[5]||"其他", ch:"csv",
+              catAuto:false, dup:null, src:"CSV导入" });
+            n++;
+          }
+          markDuplicates(); save(); this.render();
+          this.toast("已从 CSV 恢复 " + n + " 笔");
+        }catch(e){ this.toast(e.message); }
+        return;
+      }
+      try{
+        const d = JSON.parse(fr.result);
+        if(!d.txns) throw new Error("不是有效的备份文件");
+        if(!confirm("恢复备份会覆盖当前全部数据，确定继续？")) return;
+        DB.txns = d.txns || []; DB.budgets = d.budgets || {}; DB.imports = d.imports || [];
+        markDuplicates(); save();
+        V.ym = today().slice(0,7); V.day = null;
+        this.go("home"); this.renderHist();
+        this.toast("已恢复 " + DB.txns.length + " 笔");
+      }catch(e){ this.toast("恢复失败：" + e.message); }
+    };
+    fr.readAsArrayBuffer(f);
+  },
+
+  dupSheet(){
+    const dups = DB.txns.filter(t => t.dup);
+    if(!dups.length){ this.toast("没有疑似重复记录"); return; }
+    const list = dups.map(t => {
+      const o = DB.txns.find(x => (x.id||"") === t.dup);
+      return `<div class="dl"><span>${t.date} ${esc(t.who)}<br>
+        <span class="muted">${money(t.amt)} · ${t.src||""}${o?" · 原单 "+o.date:""}</span></span>
+        <button class="btn sm line" data-d="${esc(t.id||"")}">保留</button></div>`;
+    }).join("");
+    this.sheet(`<h3>疑似重复 ${dups.length} 笔</h3>
+      <div class="note" style="margin-bottom:12px">
+        微信/支付宝或账单之间可能把同一笔钱记了两次。金额、日期、对方都高度相似才判为疑似。<br>
+        <b>确实是两笔</b> → 点「保留」取消标记；<b>确实重复</b> → 在明细里长按删除。
+      </div>${list}
+      <button class="btn line" style="margin-top:14px" onclick="App.close()">知道了</button>`);
+    this.sheet.querySelectorAll("[data-d]").forEach(b => b.onclick = () => {
+      const t = DB.txns.find(x => (x.id||"") === b.dataset.d);
+      if(t){ t.dup = null; save(); this.render(); this.dupSheet(); }
+    });
+  },
+
+  wipe(){
+    if(!confirm("清空全部记录？此操作不可撤销，建议先导出备份。")) return;
+    if(!confirm("再确认一次：真的要清空全部 " + DB.txns.length + " 笔记录？")) return;
+    DB.txns = []; DB.imports = [];
+    markDuplicates(); save();
+    V.day = null; this.render();
+    this.toast("已清空");
+  },
+
+  /* —— 初始化 —— */
+  init(){
+    load(); markDuplicates();
+    V.ym = today().slice(0,7);
+    this.renderChips(); this.renderHist();
+    document.getElementById("howto").innerHTML = `
+      <b>怎么拿到账单文件</b>
+      <div style="margin-top:6px">
+        <b>微信：</b>我 → 服务 → 钱包 → 账单 → 右上角「…」→ 常见问题 → 下载账单 → 用于个人对账 → 选时间段 → 收到「微信支付账单明细」压缩包 → <b>解压</b>出 CSV。
+      </div>
+      <div style="margin-top:6px">
+        <b>支付宝：</b>我的 → 账单 → 右上角「…」→ 开具交易流水证明 → 选时间段（3 个月内）→ 保存为 CSV。
+      </div>
+      <div style="margin-top:6px">
+        <b>京东白条：</b>京东 App → 我的 → 客户服务 → 金融服务 → 我的账单 → 白条账单明细 → 右上角「…」→ 下载账单。账本能直接认。
+      </div>
+      <div style="margin-top:6px">
+        <b>美团月付 / 抖音月付：</b>这两家<b>不提供导出</b>，只能看页面。金额少就用下方「手动记一笔」；或把账单截图发给我，我生成 CSV 给你导入。
+      </div>
+      <div style="margin-top:6px">
+        <b>支持格式：</b>CSV 和 <b>Excel（.xlsx / .xlsm）</b>都能读，自动识别文件内容，不用手动转格式。网银、京东金融导出的 Excel 直接选即可。<br>
+        旧版 <b>.xls</b> 手机打不开——用 Excel/WPS 打开后「另存为」.xlsx 或 .csv 再导入。
+      </div>
+      <div style="margin-top:6px">
+        <b>云闪付：</b>本质是银行卡支付，会同时出现在银行流水里，通常不用单独导。
+      </div>
+      <div style="margin-top:7px;color:var(--sub)">
+        导入时会自动跳过账单里的表头说明行；不认识的表头会按「日期+金额」通用规则解析。<br>
+        <b>关于月付/白条：</b>消费照常记入当月支出，<b>还款单独标记为「还款」，不计入消费与预算</b>——否则 10 月还 9 月的钱会让当月支出凭空多一截。
+      </div>`;
+    this.go("home");
+  }
+};
+
+App.init();
+</script>
+</body>
+</html>
